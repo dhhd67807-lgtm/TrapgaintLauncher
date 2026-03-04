@@ -31,11 +31,11 @@ object Renderers {
         }
 
         addRenderers(
-            GL4ESRenderer(),
-            MobileGluesRenderer(),
-            VulkanZinkRenderer(),
-            VirGLRenderer(),
-            FreedrenoRenderer(),
+            VirGLRenderer(),        // VirGL uses OSMesa_2300d for best MC 1.21.5+ support
+            MobileGluesRenderer(),  // Limited to MC 1.21.4 (crashes on 1.21.5+)
+            GL4ESRenderer(),        // Limited to 1.21.4
+            VulkanZinkRenderer(),   // Limited to 1.21.4 (OSMesa_8 issue)
+            FreedrenoRenderer(),    // Limited to 1.21.4 (OSMesa_8 issue)
             PanfrostRenderer()
         )
     }

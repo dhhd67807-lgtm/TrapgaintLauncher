@@ -23,4 +23,7 @@ class MobileGluesRenderer : RendererInterface {
     }
 
     override fun getRendererLibrary(): String = "libmobileglues.so"
+    
+    // MobileGlues crashes on MC 1.21.5+ with SIGSEGV in pojavInitOpenGL
+    override fun getMaxMCVersion(): String = "1.21.4"
 }

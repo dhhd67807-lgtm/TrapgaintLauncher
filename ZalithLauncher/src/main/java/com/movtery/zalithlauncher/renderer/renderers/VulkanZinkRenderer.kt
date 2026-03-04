@@ -19,4 +19,7 @@ class VulkanZinkRenderer : RendererInterface {
     override fun getDlopenLibrary(): Lazy<List<String>> = lazy { emptyList() }
 
     override fun getRendererLibrary(): String = "libOSMesa_8.so"
+    
+    // OSMesa_8 has issues with MC 1.21.5+ (missing OSMesaFlushFrontbuffer symbol)
+    override fun getMaxMCVersion(): String = "1.21.4"
 }

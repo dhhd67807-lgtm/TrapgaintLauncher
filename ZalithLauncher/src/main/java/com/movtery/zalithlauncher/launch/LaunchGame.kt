@@ -172,7 +172,8 @@ class LaunchGame {
                 
                 if (compatibleRenderer != null) {
                     Logger.appendToLog("Auto-switching to compatible renderer: ${compatibleRenderer.getRendererName()}")
-                    Renderers.setCurrentRenderer(activity, compatibleRenderer.getRendererId())
+                    Renderers.setCurrentRenderer(activity, compatibleRenderer.getUniqueIdentifier())
+                    AllSettings.renderer.put(compatibleRenderer.getUniqueIdentifier()).save()
                     activity.runOnUiThread {
                         Toast.makeText(
                             activity,
