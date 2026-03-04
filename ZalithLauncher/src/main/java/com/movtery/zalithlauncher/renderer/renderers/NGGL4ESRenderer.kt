@@ -14,7 +14,17 @@ class NGGL4ESRenderer : RendererInterface {
 
     override fun getRendererName(): String = "Krypton Wrapper (NGGL4ES)"
 
-    override fun getRendererEnv(): Lazy<Map<String, String>> = lazy { emptyMap() }
+    override fun getRendererEnv(): Lazy<Map<String, String>> = lazy {
+        mapOf(
+            "LIBGL_USE_MC_COLOR" to "1",
+            "LIBGL_GL" to "31",
+            "LIBGL_ES" to "3",
+            "LIBGL_NORMALIZE" to "1",
+            "LIBGL_NOINTOVLHACK" to "1",
+            "LIBGL_NOERROR" to "1",
+            "POJAV_RENDERER" to "opengles3"
+        )
+    }
 
     override fun getDlopenLibrary(): Lazy<List<String>> = lazy { emptyList() }
 
