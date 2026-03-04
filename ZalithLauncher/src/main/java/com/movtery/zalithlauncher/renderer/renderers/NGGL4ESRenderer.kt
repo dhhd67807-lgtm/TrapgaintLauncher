@@ -21,7 +21,8 @@ class NGGL4ESRenderer : RendererInterface {
             "LIBGL_ES" to "3",
             "LIBGL_NORMALIZE" to "1",
             "LIBGL_NOINTOVLHACK" to "1",
-            "LIBGL_NOERROR" to "1"
+            "LIBGL_NOERROR" to "1",
+            "LIBGL_SHADERNOGLES" to "1"  // Disable GLES-specific shader modifications
         )
     }
 
