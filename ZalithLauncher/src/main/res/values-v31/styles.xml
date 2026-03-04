@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Splash Screen Theme for Android 12+ (API 31+) - Show star icon -->
+    <style name="SplashTheme" parent="AppTheme">
+        <item name="android:windowBackground">@color/background_app</item>
+        <item name="android:windowSplashScreenBackground">@color/background_app</item>
+        <item name="android:windowSplashScreenAnimatedIcon">@drawable/splash_star</item>
+        <item name="android:windowSplashScreenIconBackgroundColor">@android:color/transparent</item>
+        <item name="android:windowSplashScreenAnimationDuration">1</item>
+    </style>
+</resources>

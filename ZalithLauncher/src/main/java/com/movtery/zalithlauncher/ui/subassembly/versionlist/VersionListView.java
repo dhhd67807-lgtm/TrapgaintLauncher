@@ -35,6 +35,9 @@ public class VersionListView extends LinearLayout {
     private List<JMinecraftVersionList.Version> releaseList, snapshotList, betaList, alphaList;
     private FileRecyclerViewCreator fileRecyclerViewCreator;
     private VersionSelectedListener versionSelectedListener;
+    private int loaderIconRes = R.drawable.ic_minecraft; // Default to vanilla
+    private String versionFilter = null; // Filter for specific version (e.g., "1.21")
+    private android.widget.TextView emptyStateTextView;
 
     public VersionListView(Context context) {
         this(context, null);
@@ -58,6 +61,14 @@ public class VersionListView extends LinearLayout {
         setOrientation(VERTICAL);
 
         RecyclerView mainListView = new RecyclerView(context);
+        
+        // Create empty state text view
+        emptyStateTextView = new android.widget.TextView(context);
+        emptyStateTextView.setText("No versions available");
+        emptyStateTextView.setTextSize(16);
+        emptyStateTextView.setGravity(android.view.Gravity.CENTER);
+        emptyStateTextView.setPadding(32, 32, 32, 32);
+        emptyStateTextView.setVisibility(GONE);
 
         JMinecraftVersionList.Version[] versionArray;
         MinecraftVersionValueEvent event = EventBus.getDefault().getStickyEvent(MinecraftVersionValueEvent.class);
@@ -84,12 +95,19 @@ public class VersionListView extends LinearLayout {
         );
 
         addView(mainListView, layParam);
+        addView(emptyStateTextView, layParam);
     }
 
     private Pair<String, Date>[] getVersionPair(List<JMinecraftVersionList.Version> versions) {
         List<Pair<String, Date>> pairList = new ArrayList<>();
         for (int i = 0; i < versions.size(); i++) {
             JMinecraftVersionList.Version version = versions.get(i);
+            
+            // Apply version filter if set (e.g., only show 1.21.x versions)
+            if (versionFilter != null && !version.id.startsWith(versionFilter)) {
+                continue;
+            }
+            
             Date date;
             try {
                 DateTimeFormatter formatter = DateTimeFormatter.ISO_DATE_TIME;
@@ -106,6 +124,22 @@ public class VersionListView extends LinearLayout {
 
     public void setVersionSelectedListener(VersionSelectedListener versionSelectedListener) {
         this.versionSelectedListener = versionSelectedListener;
+    }
+    
+    public void setLoaderIcon(int iconRes) {
+        this.loaderIconRes = iconRes;
+        // Refresh the current view with the new icon
+        if (fileRecyclerViewCreator != null) {
+            setVersionType(VersionType.RELEASE);
+        }
+    }
+    
+    public void setVersionFilter(String versionPrefix) {
+        this.versionFilter = versionPrefix;
+        // Refresh the current view with the filter
+        if (fileRecyclerViewCreator != null) {
+            setVersionType(VersionType.RELEASE);
+        }
     }
 
     public void setVersionType(VersionType versionType) {
@@ -127,12 +161,28 @@ public class VersionListView extends LinearLayout {
                 return getVersion(context.getDrawable(R.drawable.ic_old_grass_block), getVersionPair(alphaList));
             case RELEASE:
             default:
-                return getVersion(context.getDrawable(R.drawable.ic_minecraft), getVersionPair(releaseList));
+                // Use the loader icon for release versions
+                return getVersion(context.getDrawable(loaderIconRes), getVersionPair(releaseList));
         }
     }
 
     private List<FileItemBean> getVersion(Drawable icon, Pair<String, Date>[] namesPair) {
         List<FileItemBean> itemBeans = FileRecyclerViewCreator.loadItemBean(icon, namesPair);
+        
+        // Show/hide empty state based on whether there are items
+        if (emptyStateTextView != null) {
+            if (itemBeans.isEmpty()) {
+                emptyStateTextView.setVisibility(VISIBLE);
+                String message = "No versions available";
+                if (versionFilter != null) {
+                    message = "No " + versionFilter + " versions available";
+                }
+                emptyStateTextView.setText(message);
+            } else {
+                emptyStateTextView.setVisibility(GONE);
+            }
+        }
+        
         TaskExecutors.runInUIThread(() -> fileRecyclerViewCreator.loadData(itemBeans));
         return itemBeans;
     }

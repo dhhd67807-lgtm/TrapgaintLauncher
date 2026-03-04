@@ -56,6 +56,8 @@ public class AccountAdapter extends RecyclerView.Adapter<AccountAdapter.Holder> 
         void onRefresh(MinecraftAccount account);
 
         void onDelete(MinecraftAccount account);
+        
+        void onChangeSkin(MinecraftAccount account);
     }
 
     public class Holder extends RecyclerView.ViewHolder {
@@ -73,6 +75,7 @@ public class AccountAdapter extends RecyclerView.Adapter<AccountAdapter.Holder> 
                 itemView.setOnClickListener(v -> accountUpdateListener.onViewClick(account));
                 binding.refresh.setOnClickListener(v -> accountUpdateListener.onRefresh(account));
                 binding.delete.setOnClickListener(v -> accountUpdateListener.onDelete(account));
+                binding.changeSkin.setOnClickListener(v -> accountUpdateListener.onChangeSkin(account));
             }
 
             binding.name.setText(account.username);
@@ -80,12 +83,15 @@ public class AccountAdapter extends RecyclerView.Adapter<AccountAdapter.Holder> 
             String loginType;
             if (AccountUtils.isMicrosoftAccount(account)) {
                 setButtonClickable(binding.refresh, true);
+                setButtonClickable(binding.changeSkin, false);
                 loginType = mContext.getString(R.string.account_microsoft_account);
             } else if (AccountUtils.isOtherLoginAccount(account)) {
                 setButtonClickable(binding.refresh, true);
+                setButtonClickable(binding.changeSkin, true);
                 loginType = account.accountType;
             } else {
                 setButtonClickable(binding.refresh, false);
+                setButtonClickable(binding.changeSkin, true);
                 loginType = mContext.getString(R.string.account_local_account);
             }
 
@@ -99,8 +105,7 @@ public class AccountAdapter extends RecyclerView.Adapter<AccountAdapter.Holder> 
         }
 
         private void setButtonClickable(View button, boolean clickable) {
-            button.setAlpha(clickable ? 1.0f : 0.5f);
-            button.setEnabled(clickable);
+            button.setVisibility(clickable ? View.VISIBLE : View.GONE);
         }
     }
 }

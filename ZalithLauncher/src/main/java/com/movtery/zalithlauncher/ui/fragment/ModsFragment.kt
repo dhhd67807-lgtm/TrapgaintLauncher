@@ -85,6 +85,7 @@ class ModsFragment : FragmentWithAnim(R.layout.fragment_mods) {
             fileRecyclerView.apply {
                 setShowFiles(true)
                 setShowFolders(false)
+                setShowDeleteButton(true)
 
                 setFileSelectedListener(object : FileSelectedListener() {
                     override fun onFileSelected(file: File?, path: String?) {
@@ -157,7 +158,6 @@ class ModsFragment : FragmentWithAnim(R.layout.fragment_mods) {
                                     closeMultiSelect()
                                     refreshPath()
                                 }, fullPath, selectedFiles!!)
-                            filesDialog.setCopyButtonClick { operateView.pasteButton.visibility = View.VISIBLE }
                             filesDialog.setMoreButtonClick {
                                 ModToggleHandler(requireContext(), selectedFiles,
                                     Task.runTask(TaskExecutors.getAndroidUI()) {
@@ -170,68 +170,28 @@ class ModsFragment : FragmentWithAnim(R.layout.fragment_mods) {
                     }
                 }
 
+                setOnDeleteClickListener { position, itemBean ->
+                    itemBean.file?.let { file ->
+                        if (file.isFile) {
+                            com.movtery.zalithlauncher.ui.dialog.TipDialog.Builder(requireContext())
+                                .setTitle(R.string.generic_warning)
+                                .setMessage(getString(R.string.file_delete))
+                                .setWarning()
+                                .setConfirmClickListener {
+                                    if (file.delete()) {
+                                        Toast.makeText(requireContext(), getString(R.string.file_added), Toast.LENGTH_SHORT).show()
+                                        refreshPath()
+                                    } else {
+                                        Toast.makeText(requireContext(), getString(R.string.generic_error), Toast.LENGTH_SHORT).show()
+                                    }
+                                }
+                                .showDialog()
+                        }
+                    }
+                }
+
                 setRefreshListener {
                     setVisibilityAnim(nothingLayout, isNoFile)
-                }
-            }
-
-            multiSelectFiles.setOnCheckedChangeListener { _: CompoundButton?, isChecked: Boolean ->
-                selectAll.apply {
-                    this.isChecked = false
-                    visibility = if (isChecked) View.VISIBLE else View.GONE
-                }
-                fileRecyclerView.adapter.setMultiSelectMode(isChecked)
-                mSearchViewWrapper.let { if (mSearchViewWrapper.isVisible()) mSearchViewWrapper.setVisibility(!isChecked) }
-            }
-
-            operateView.apply {
-                selectAll.setOnCheckedChangeListener { _: CompoundButton?, isChecked: Boolean ->
-                    fileRecyclerView.adapter.selectAllFiles(isChecked)
-                }
-
-                returnButton.setOnClickListener {
-                    closeMultiSelect()
-                    ZHTools.onBackPressed(requireActivity())
-                }
-
-                addFileButton.setOnClickListener {
-                    closeMultiSelect()
-                    val suffix = ".jar"
-                    Toast.makeText(
-                        requireActivity(),
-                        String.format(getString(R.string.file_add_file_tip), suffix),
-                        Toast.LENGTH_SHORT
-                    ).show()
-                    openDocumentLauncher.launch(suffix)
-                }
-
-                pasteButton.setOnClickListener {
-                    PasteFile.getInstance().pasteFiles(
-                        requireActivity(),
-                        fileRecyclerView.fullPath,
-                        object : FileCopyHandler.FileExtensionGetter {
-                            override fun onGet(file: File?): String? {
-                                return file?.let { it1 -> getFileSuffix(it1) }
-                            }
-                        },
-                        Task.runTask(TaskExecutors.getAndroidUI()) {
-                            closeMultiSelect()
-                            pasteButton.visibility = View.GONE
-                            fileRecyclerView.refreshPath()
-                        }
-                    )
-                }
-
-                createFolderButton.setOnClickListener { goDownloadMod() }
-
-                searchButton.setOnClickListener {
-                    closeMultiSelect()
-                    mSearchViewWrapper.setVisibility()
-                }
-
-                refreshButton.setOnClickListener {
-                    closeMultiSelect()
-                    fileRecyclerView.refreshPath()
                 }
             }
 
@@ -244,26 +204,11 @@ class ModsFragment : FragmentWithAnim(R.layout.fragment_mods) {
     }
 
     private fun startNewbieGuide() {
-        if (NewbieGuideUtils.showOnlyOne(TAG)) return
-        binding.operateView.apply {
-            val fragmentActivity = requireActivity()
-            TapTargetSequence(fragmentActivity)
-                .targets(
-                    NewbieGuideUtils.getSimpleTarget(fragmentActivity, refreshButton, getString(R.string.generic_refresh), getString(R.string.newbie_guide_general_refresh)),
-                    NewbieGuideUtils.getSimpleTarget(fragmentActivity, searchButton, getString(R.string.generic_search), getString(R.string.newbie_guide_mod_search)),
-                    NewbieGuideUtils.getSimpleTarget(fragmentActivity, addFileButton, getString(R.string.profile_mods_add_mod), getString(R.string.newbie_guide_mod_import)),
-                    NewbieGuideUtils.getSimpleTarget(fragmentActivity, createFolderButton, getString(R.string.profile_mods_download_mod), getString(R.string.newbie_guide_mod_download)),
-                    NewbieGuideUtils.getSimpleTarget(fragmentActivity, returnButton, getString(R.string.generic_close), getString(R.string.newbie_guide_general_close)))
-                .start()
-        }
+        // Newbie guide removed since sidebar is removed
     }
 
     private fun closeMultiSelect() {
-        //点击其它控件时关闭多选模式
-        binding.apply {
-            multiSelectFiles.isChecked = false
-            selectAll.visibility = View.GONE
-        }
+        // Multi-select mode removed since sidebar is removed
     }
 
     private fun getFileSuffix(file: File): String {
@@ -309,41 +254,18 @@ class ModsFragment : FragmentWithAnim(R.layout.fragment_mods) {
             }
 
             fileRecyclerView.setFileIcon(FileIcon.MOD)
-
-            operateView.apply {
-                addFileButton.setContentDescription(getString(R.string.profile_mods_add_mod))
-                createFolderButton.setContentDescription(getString(R.string.profile_mods_download_mod))
-                createFolderButton.setImageDrawable(
-                    ContextCompat.getDrawable(
-                        requireContext(),
-                        R.drawable.ic_download
-                    )
-                )
-                pasteButton.setVisibility(if (PasteFile.getInstance().pasteType != null) View.VISIBLE else View.GONE)
-
-                ZHTools.setTooltipText(
-                    returnButton,
-                    addFileButton,
-                    pasteButton,
-                    createFolderButton,
-                    searchButton,
-                    refreshButton
-                )
-            }
         }
     }
 
     override fun slideIn(animPlayer: AnimPlayer) {
         binding.apply {
             animPlayer.apply(AnimPlayer.Entry(modsLayout, Animations.BounceInDown))
-                .apply(AnimPlayer.Entry(operateLayout, Animations.BounceInLeft))
         }
     }
 
     override fun slideOut(animPlayer: AnimPlayer) {
         binding.apply {
             animPlayer.apply(AnimPlayer.Entry(modsLayout, Animations.FadeOutUp))
-                .apply(AnimPlayer.Entry(operateLayout, Animations.FadeOutRight))
         }
     }
 }

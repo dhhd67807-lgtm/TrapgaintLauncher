@@ -124,15 +124,23 @@ public class LauncherActivity extends BaseActivity {
     private ProgressServiceKeeper mProgressServiceKeeper;
     private NotificationManager mNotificationManager;
     private Future<?> checkNotice;
+    
+    // Debouncing flags to prevent multiple rapid clicks
+    private boolean isStarIconClickable = true;
+    private boolean isProfileIconClickable = true;
+    private static final long CLICK_DEBOUNCE_DELAY = 500; // 500ms delay
 
     /* Allows to switch from one button "type" to another */
     private final FragmentManager.FragmentLifecycleCallbacks mFragmentCallbackListener = new FragmentManager.FragmentLifecycleCallbacks() {
         @Override
         public void onFragmentResumed(@NonNull FragmentManager fm, @NonNull Fragment f) {
-            if (f instanceof MainMenuFragment) {
-                mSettingsButtonWrapper.setButtonType(ButtonType.SETTINGS);
-            } else {
-                mSettingsButtonWrapper.setButtonType(ButtonType.HOME);
+            // Settings button removed - no longer needed
+            if (mSettingsButtonWrapper != null) {
+                if (f instanceof MainMenuFragment) {
+                    mSettingsButtonWrapper.setButtonType(ButtonType.SETTINGS);
+                } else {
+                    mSettingsButtonWrapper.setButtonType(ButtonType.HOME);
+                }
             }
         }
     };
@@ -165,6 +173,12 @@ public class LauncherActivity extends BaseActivity {
         //如果当前可见的Fragment不为空，则判断当前的Fragment是否为AccountFragment，不是就跳转至AccountFragment
         if (currentFragment == null || getVisibleFragment(AccountFragment.TAG) != null) return;
         ZHTools.swapFragmentWithAnim(currentFragment, AccountFragment.class, AccountFragment.TAG, null);
+    }
+
+    @Subscribe(threadMode = ThreadMode.MAIN)
+    public void event(com.movtery.zalithlauncher.event.single.AccountUpdateEvent event) {
+        // Refresh the profile skin in header when account is updated
+        loadProfileSkinFace();
     }
 
     @Subscribe(threadMode = ThreadMode.MAIN)
@@ -372,14 +386,13 @@ public class LauncherActivity extends BaseActivity {
 
         ProgressKeeper.addTaskCountListener(mDoubleLaunchPreventionListener);
         ProgressKeeper.addTaskCountListener((mProgressServiceKeeper = new ProgressServiceKeeper(this)));
-        ProgressKeeper.addTaskCountListener(binding.progressLayout);
+        // Don't add progressLayout as a task count listener - we're using custom progress bars
+        // ProgressKeeper.addTaskCountListener(binding.progressLayout);
 
         new AsyncVersionList().getVersionList(versions -> EventBus.getDefault().postSticky(
                         new MinecraftVersionValueEvent(versions)),
                 false
         );
-
-        checkNotice();
 
         //检查已经下载后的包，或者检查更新
         Task.runTask(() -> {
@@ -420,41 +433,88 @@ public class LauncherActivity extends BaseActivity {
     private void processViews() {
         refreshBackground();
         setPageOpacity(AllSettings.getPageOpacity().getValue());
-        mSettingsButtonWrapper = new SettingsButtonWrapper(binding.settingButton);
-        mSettingsButtonWrapper.setOnTypeChangeListener(type -> ViewAnimUtils.setViewAnim(binding.settingButton, Animations.Pulse));
-        binding.downloadButton.setOnClickListener(v -> {
-            Fragment fragment = getSupportFragmentManager().findFragmentById(binding.containerFragment.getId());
-            if (fragment != null && !(fragment instanceof DownloadFragment || fragment instanceof DownloadModFragment)) {
-                ViewAnimUtils.setViewAnim(binding.downloadButton, Animations.Pulse);
-                ZHTools.swapFragmentWithAnim(fragment, DownloadFragment.class, DownloadFragment.TAG, null);
+        
+        // Removed settings and download buttons - now using centered logo and title
+        // mSettingsButtonWrapper = new SettingsButtonWrapper(binding.settingButton);
+        // mSettingsButtonWrapper.setOnTypeChangeListener(type -> ViewAnimUtils.setViewAnim(binding.settingButton, Animations.Pulse));
+        
+        // binding.downloadButton.setOnClickListener(v -> {
+        //     Fragment fragment = getSupportFragmentManager().findFragmentById(binding.containerFragment.getId());
+        //     if (fragment != null && !(fragment instanceof DownloadFragment || fragment instanceof DownloadModFragment)) {
+        //         ViewAnimUtils.setViewAnim(binding.downloadButton, Animations.Pulse);
+        //         ZHTools.swapFragmentWithAnim(fragment, DownloadFragment.class, DownloadFragment.TAG, null);
+        //     }
+        // });
+        
+        // binding.settingButton.setOnClickListener(v -> {
+        //     ViewAnimUtils.setViewAnim(binding.settingButton, Animations.Pulse);
+        //     Fragment fragment = getSupportFragmentManager().findFragmentById(binding.containerFragment.getId());
+        //     if (fragment instanceof MainMenuFragment) {
+        //         ZHTools.swapFragmentWithAnim(fragment, SettingsFragment.class, SettingsFragment.TAG, null);
+        //     } else {
+        //         // The setting button doubles as a home button now
+        //         Tools.backToMainMenu(this);
+        //     }
+        // });
+        
+        // Dragon Launcher title
+        binding.appTitleText.setText("Dragon Launcher");
+        
+        // Load user skin face in top right corner
+        loadProfileSkinFace();
+        
+        // Add click listener to star icon to open installation menu
+        binding.starIcon.setOnClickListener(v -> {
+            if (!isStarIconClickable) return; // Prevent multiple rapid clicks
+            isStarIconClickable = false;
+            
+            Fragment currentFragment = getSupportFragmentManager().findFragmentById(binding.containerFragment.getId());
+            if (currentFragment != null && !(currentFragment instanceof DownloadFragment)) {
+                ViewAnimUtils.setViewAnim(binding.starIcon, Animations.Pulse);
+                com.movtery.zalithlauncher.utils.ZHTools.swapFragmentWithAnim(
+                    currentFragment, 
+                    DownloadFragment.class, 
+                    DownloadFragment.TAG, 
+                    null
+                );
             }
+            
+            // Re-enable clicking after delay
+            v.postDelayed(() -> isStarIconClickable = true, CLICK_DEBOUNCE_DELAY);
         });
-        binding.settingButton.setOnClickListener(v -> {
-            ViewAnimUtils.setViewAnim(binding.settingButton, Animations.Pulse);
-            Fragment fragment = getSupportFragmentManager().findFragmentById(binding.containerFragment.getId());
-            if (fragment instanceof MainMenuFragment) {
-                ZHTools.swapFragmentWithAnim(fragment, SettingsFragment.class, SettingsFragment.TAG, null);
-            } else {
-                // The setting button doubles as a home button now
-                Tools.backToMainMenu(this);
+        
+        // Add click listener to profile icon to open account screen
+        binding.profileSkinFace.setOnClickListener(v -> {
+            if (!isProfileIconClickable) return; // Prevent multiple rapid clicks
+            isProfileIconClickable = false;
+            
+            Fragment currentFragment = getSupportFragmentManager().findFragmentById(binding.containerFragment.getId());
+            if (currentFragment != null) {
+                com.movtery.zalithlauncher.utils.ZHTools.swapFragmentWithAnim(
+                    currentFragment, 
+                    com.movtery.zalithlauncher.ui.fragment.AccountFragment.class, 
+                    com.movtery.zalithlauncher.ui.fragment.AccountFragment.TAG, 
+                    null
+                );
             }
+            
+            // Re-enable clicking after delay
+            v.postDelayed(() -> isProfileIconClickable = true, CLICK_DEBOUNCE_DELAY);
         });
-        binding.appTitleText.setText(InfoDistributor.APP_NAME);
-        binding.appTitleText.setOnClickListener(v -> {
-            String shiftedString = StringUtils.shiftString(binding.appTitleText.getText().toString(), ShiftDirection.RIGHT, 1);
-            if (new Random().nextInt(100) < 20 && shiftedString.equals(InfoDistributor.APP_NAME)) {
-                ErrorActivity.showEasterEgg(this);
-                return;
-            }
-            binding.appTitleText.setText(shiftedString);
-        });
-
-        binding.progressLayout.observe(ProgressLayout.DOWNLOAD_MINECRAFT);
-        binding.progressLayout.observe(ProgressLayout.UNPACK_RUNTIME);
-        binding.progressLayout.observe(ProgressLayout.INSTALL_RESOURCE);
-        binding.progressLayout.observe(ProgressLayout.LOGIN_ACCOUNT);
-        binding.progressLayout.observe(ProgressLayout.DOWNLOAD_VERSION_LIST);
-        binding.progressLayout.observe(ProgressLayout.CHECKING_MODS);
+        
+        // Title text - no animation
+        binding.appTitleText.setText("Dragon Launcher");
+        
+        // Hide the bottom progress layout completely and don't register it as a task listener
+        binding.progressLayout.setVisibility(View.GONE);
+        
+        // Don't observe any progress - we're using custom progress bars on cards instead
+        // binding.progressLayout.observe(ProgressLayout.DOWNLOAD_MINECRAFT);
+        // binding.progressLayout.observe(ProgressLayout.UNPACK_RUNTIME);
+        // binding.progressLayout.observe(ProgressLayout.INSTALL_RESOURCE);
+        // binding.progressLayout.observe(ProgressLayout.LOGIN_ACCOUNT);
+        // binding.progressLayout.observe(ProgressLayout.DOWNLOAD_VERSION_LIST);
+        // binding.progressLayout.observe(ProgressLayout.CHECKING_MODS);
 
         binding.noticeGotButton.setOnClickListener(v -> {
             setNotice(false);
@@ -517,26 +577,8 @@ public class LauncherActivity extends BaseActivity {
     }
 
     private void launchGame(Version version) {
-        LocalAccountUtils.checkUsageAllowed(new LocalAccountUtils.CheckResultListener() {
-            @Override
-            public void onUsageAllowed() {
-                preLaunch(LauncherActivity.this, version);
-            }
-
-            @Override
-            public void onUsageDenied() {
-                if (!AllSettings.getLocalAccountReminders().getValue()) {
-                    preLaunch(LauncherActivity.this, version);
-                } else {
-                    LocalAccountUtils.openDialog(LauncherActivity.this, checked -> {
-                                LocalAccountUtils.saveReminders(checked);
-                                preLaunch(LauncherActivity.this, version);
-                            },
-                            getString(R.string.account_no_microsoft_account) + getString(R.string.account_purchase_minecraft_account_tip),
-                            R.string.account_continue_to_launch_the_game);
-                }
-            }
-        });
+        // Launch game directly without warning
+        preLaunch(LauncherActivity.this, version);
     }
 
     private void checkNotice() {
@@ -608,18 +650,41 @@ public class LauncherActivity extends BaseActivity {
                         palette.getDarkMutedColor(0xFFFFFFFF);
 
                 ColorStateList colorStateList = ColorStateList.valueOf(mutedColor);
-                binding.appTitleText.setTextColor(mutedColor);
-                binding.downloadButton.setImageTintList(colorStateList);
-                binding.settingButton.setImageTintList(colorStateList);
+                // Removed title text color
+                // binding.appTitleText.setTextColor(mutedColor);
+                // Removed button tint references
+                // binding.downloadButton.setImageTintList(colorStateList);
+                // binding.settingButton.setImageTintList(colorStateList);
 
                 return;
             }
         }
         binding.topLayout.setBackgroundColor(backgroundMenuTop);
-        binding.appTitleText.setTextColor(ContextCompat.getColor(this, R.color.menu_bar_text));
-        ColorStateList colorStateList = ColorStateList.valueOf(0xFFFFFFFF);
-        binding.downloadButton.setImageTintList(colorStateList);
-        binding.settingButton.setImageTintList(colorStateList);
+        // Removed title text color
+        // binding.appTitleText.setTextColor(ContextCompat.getColor(this, R.color.menu_bar_text));
+        // Removed button tint references
+        // ColorStateList colorStateList = ColorStateList.valueOf(0xFFFFFFFF);
+        // binding.downloadButton.setImageTintList(colorStateList);
+        // binding.settingButton.setImageTintList(colorStateList);
+    }
+
+    private void loadProfileSkinFace() {
+        try {
+            net.kdt.pojavlaunch.value.MinecraftAccount account = com.movtery.zalithlauncher.feature.accounts.AccountsManager.INSTANCE.getCurrentAccount();
+            if (account != null) {
+                binding.profileSkinFace.setImageDrawable(
+                    com.movtery.zalithlauncher.utils.skin.SkinLoader.getAvatarDrawable(
+                        this,
+                        account,
+                        (int) Tools.dpToPx(48f)
+                    )
+                );
+            } else {
+                binding.profileSkinFace.setImageDrawable(ContextCompat.getDrawable(this, R.drawable.trapcode));
+            }
+        } catch (Exception e) {
+            binding.profileSkinFace.setImageDrawable(ContextCompat.getDrawable(this, R.drawable.trapcode));
+        }
     }
 
     @SuppressWarnings("SameParameterValue")

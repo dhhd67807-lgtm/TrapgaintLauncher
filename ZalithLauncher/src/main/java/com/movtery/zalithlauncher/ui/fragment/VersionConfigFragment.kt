@@ -94,11 +94,6 @@ class VersionConfigFragment : FragmentWithAnim(R.layout.fragment_version_config)
 
         val listener = this
         binding.apply {
-            cancelButton.setOnClickListener(listener)
-            saveButton.setOnClickListener(listener)
-            iconLayout.setOnClickListener(listener)
-            iconReset.setOnClickListener(listener)
-
             controlName.setOnClickListener(listener)
             resetControl.setOnClickListener(listener)
             customPath.setOnClickListener(listener)
@@ -150,14 +145,6 @@ class VersionConfigFragment : FragmentWithAnim(R.layout.fragment_version_config)
         val activity = requireActivity()
         binding.apply {
             when (v) {
-                cancelButton -> ZHTools.onBackPressed(activity)
-                saveButton -> {
-                    save()
-                    Tools.backToMainMenu(requireActivity())
-                }
-                iconLayout -> openDocumentLauncher.launch(arrayOf("image/*"))
-                iconReset -> resetIcon()
-
                 controlName -> {
                     mSelectPathMark = SELECT_CONTROL
                     ZHTools.swapFragmentWithAnim(
@@ -197,6 +184,7 @@ class VersionConfigFragment : FragmentWithAnim(R.layout.fragment_version_config)
     }
 
     override fun onPause() {
+        save()
         closeSpinner()
         super.onPause()
     }
@@ -227,23 +215,7 @@ class VersionConfigFragment : FragmentWithAnim(R.layout.fragment_version_config)
      * @param init 首次刷新不需要对重置按钮播放动画
      */
     private fun refreshIcon(init: Boolean) {
-        binding.apply {
-            val isCustomIcon = mVersionIconUtils.start(icon)
-            if (init) {
-                iconReset.visibility = if (isCustomIcon) View.VISIBLE else View.GONE
-            } else {
-                resetIconAnimPlayer.clearEntries()
-                resetIconAnimPlayer.apply(
-                    AnimPlayer.Entry(iconReset, if (isCustomIcon) Animations.BounceEnlarge else Animations.BounceShrink)
-                ).setOnStart {
-                    iconReset.visibility = View.VISIBLE
-                    iconReset.isEnabled = false
-                }.setOnEnd {
-                    iconReset.visibility = if (isCustomIcon) View.VISIBLE else View.GONE
-                    iconReset.isEnabled = isCustomIcon
-                }.start()
-            }
-        }
+        // Icon display removed with sidebar
     }
 
     private fun resetIcon() {
@@ -373,13 +345,10 @@ class VersionConfigFragment : FragmentWithAnim(R.layout.fragment_version_config)
 
     override fun slideIn(animPlayer: AnimPlayer) {
         animPlayer.apply(AnimPlayer.Entry(binding.editorLayout, Animations.BounceInDown))
-            .apply(AnimPlayer.Entry(binding.operateLayout, Animations.BounceInLeft))
-            .apply(AnimPlayer.Entry(binding.iconLayout, Animations.Wobble))
     }
 
     override fun slideOut(animPlayer: AnimPlayer) {
         animPlayer.apply(AnimPlayer.Entry(binding.editorLayout, Animations.FadeOutUp))
-            .apply(AnimPlayer.Entry(binding.operateLayout, Animations.FadeOutRight))
     }
 
     companion object {

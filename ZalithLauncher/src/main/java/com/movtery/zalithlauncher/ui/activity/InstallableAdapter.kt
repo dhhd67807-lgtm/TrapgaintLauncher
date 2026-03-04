@@ -15,8 +15,13 @@ class InstallableAdapter(
 ) : RecyclerView.Adapter<InstallableAdapter.ViewHolder>() {
     @Volatile
     private var completedTasksCount = 0
+    private var progressListener: ((Int, Int) -> Unit)? = null
 
     private val mainHandler = Handler(Looper.getMainLooper())
+    
+    fun setProgressListener(listener: (completed: Int, total: Int) -> Unit) {
+        this.progressListener = listener
+    }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
         val binding = ItemInstallableBinding.inflate(LayoutInflater.from(parent.context), parent, false)
@@ -68,6 +73,9 @@ class InstallableAdapter(
     private fun updateTaskCount(index: Int) {
         completedTasksCount++
         updateUI { notifyItemChanged(index) }
+        
+        // Notify progress listener
+        progressListener?.invoke(completedTasksCount, itemCount)
 
         if (completedTasksCount >= itemCount) {
             updateUI { listener.onAllTasksCompleted() }

@@ -39,6 +39,9 @@ class SplashActivity : BaseActivity() {
         setContentView(binding.root)
 
         binding.titleText.text = InfoDistributor.APP_NAME
+        
+        // Apply gold to white gradient to "Dragon" text and make it bold
+        applyGradientToTitle()
         binding.recyclerView.apply {
             layoutManager = LinearLayoutManager(this@SplashActivity)
             adapter = installableAdapter
@@ -125,6 +128,15 @@ class SplashActivity : BaseActivity() {
         installableAdapter = InstallableAdapter(items) {
             toMain()
         }
+        
+        // Set progress listener
+        installableAdapter.setProgressListener { completed, total ->
+            val percentage = if (total > 0) (completed * 100 / total) else 0
+            runOnUiThread {
+                binding.progressText.visibility = android.view.View.VISIBLE
+                binding.progressText.text = "$percentage%"
+            }
+        }
     }
     
     private fun checkEnd() {
@@ -133,12 +145,64 @@ class SplashActivity : BaseActivity() {
             UnpackSingleFilesTask(this).run()
         }.execute()
 
-        binding.startButton.isClickable = true
+        // Auto-install all components and skip to main screen
+        if (items.isEmpty()) {
+            // No components to install, go directly to main
+            toMain()
+        } else {
+            // Auto-start installation without showing the list
+            isStarted = true
+            binding.splashText.setText(R.string.splash_screen_installing)
+            binding.startButton.visibility = android.view.View.GONE
+            binding.recyclerView.visibility = android.view.View.GONE
+            installableAdapter.startAllTasks()
+        }
     }
 
     private fun toMain() {
         startActivity(Intent(this, LauncherActivity::class.java))
         finish()
+    }
+    
+    private fun applyGradientToTitle() {
+        val titleText = InfoDistributor.APP_NAME
+        val spannableString = android.text.SpannableString(titleText)
+        
+        // Find "Dragon" in the text
+        val dragonIndex = titleText.indexOf("Dragon")
+        if (dragonIndex != -1) {
+            // Create gradient shader for "Dragon" text
+            val paint = binding.titleText.paint
+            val textWidth = paint.measureText("Dragon")
+            
+            val shader = android.graphics.LinearGradient(
+                0f, 0f, textWidth, 0f,
+                intArrayOf(
+                    android.graphics.Color.parseColor("#FFD700"), // Gold
+                    android.graphics.Color.parseColor("#FFFFFF")  // White
+                ),
+                null,
+                android.graphics.Shader.TileMode.CLAMP
+            )
+            
+            // Apply gradient to "Dragon" part
+            spannableString.setSpan(
+                android.text.style.ForegroundColorSpan(android.graphics.Color.parseColor("#FFD700")),
+                dragonIndex,
+                dragonIndex + 6,
+                android.text.Spannable.SPAN_EXCLUSIVE_EXCLUSIVE
+            )
+            
+            // Make entire text bold
+            spannableString.setSpan(
+                android.text.style.StyleSpan(android.graphics.Typeface.BOLD),
+                0,
+                titleText.length,
+                android.text.Spannable.SPAN_EXCLUSIVE_EXCLUSIVE
+            )
+        }
+        
+        binding.titleText.text = spannableString
     }
 
     companion object {

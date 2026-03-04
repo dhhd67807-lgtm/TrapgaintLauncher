@@ -29,9 +29,11 @@ public class FileRecyclerAdapter extends RecyclerView.Adapter<FileRecyclerAdapte
     private final List<FileItemBean> mData = new ArrayList<>();
     private final List<FileItemBean> selectedFiles = new ArrayList<>();
     private boolean isMultiSelectMode = false;
+    private boolean showDeleteButton = false;
     private OnItemClickListener mOnItemClickListener;
     private OnItemLongClickListener mOnItemLongClickListener;
     private OnMultiSelectListener mOnMultiSelectListener;
+    private OnDeleteClickListener mOnDeleteClickListener;
 
     @NonNull
     @Override
@@ -114,6 +116,14 @@ public class FileRecyclerAdapter extends RecyclerView.Adapter<FileRecyclerAdapte
         this.mOnItemLongClickListener = listener;
     }
 
+    public void setOnDeleteClickListener(OnDeleteClickListener listener) {
+        this.mOnDeleteClickListener = listener;
+    }
+
+    public void setShowDeleteButton(boolean show) {
+        this.showDeleteButton = show;
+    }
+
     public interface OnItemClickListener {
         void onItemClick(int position, FileItemBean itemBean);
     }
@@ -124,6 +134,10 @@ public class FileRecyclerAdapter extends RecyclerView.Adapter<FileRecyclerAdapte
 
     public interface OnItemLongClickListener {
         void onItemLongClick(int position, FileItemBean itemBean);
+    }
+
+    public interface OnDeleteClickListener {
+        void onDeleteClick(int position, FileItemBean itemBean);
     }
 
     public class InnerHolder extends RecyclerView.ViewHolder {
@@ -142,6 +156,13 @@ public class FileRecyclerAdapter extends RecyclerView.Adapter<FileRecyclerAdapte
                     toggleSelection(mFileItemBean, binding.check);
                 }
             });
+            
+            binding.deleteButton.setOnClickListener(v -> {
+                if (mOnDeleteClickListener != null && !isMultiSelectMode) {
+                    mOnDeleteClickListener.onDeleteClick(mPosition, mFileItemBean);
+                }
+            });
+            
             if (mOnItemClickListener != null) {
                 itemView.setOnClickListener(v -> {
                     if (isMultiSelectMode) {
@@ -196,8 +217,20 @@ public class FileRecyclerAdapter extends RecyclerView.Adapter<FileRecyclerAdapte
             if (fileItemBean.isCanCheck) {
                 binding.check.setVisibility(isMultiSelectMode ? View.VISIBLE : View.GONE);
                 binding.check.setChecked(selectedFiles.contains(fileItemBean));
+                binding.deleteButton.setVisibility((showDeleteButton && !isMultiSelectMode) ? View.VISIBLE : View.GONE);
             } else {
                 binding.check.setVisibility(View.GONE);
+                binding.deleteButton.setVisibility(View.GONE);
+            }
+            
+            // Check if this version is installed (for version lists only)
+            if (file == null && fileItemBean.name != null) {
+                // This is a version item (not a file), check if it's installed
+                File versionDir = new File(com.movtery.zalithlauncher.feature.customprofilepath.ProfilePathHome.getVersionsHome(), fileItemBean.name);
+                boolean isInstalled = versionDir.exists() && versionDir.isDirectory();
+                binding.installedCheck.setVisibility(isInstalled ? View.VISIBLE : View.GONE);
+            } else {
+                binding.installedCheck.setVisibility(View.GONE);
             }
 
             if (file != null && file.isFile() && ImageUtils.isImage(file)) {

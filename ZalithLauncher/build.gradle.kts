@@ -116,6 +116,7 @@ android {
                     val variantName = variant.name.replaceFirstChar { it.uppercaseChar() }
                     afterEvaluate {
                         val task = tasks.named("merge${variantName}Assets").get() as MergeSourceSetFolders
+                        task.dependsOn(":jre_lwjgl3glfw:jar")
                         task.doLast {
                             val arch = System.getProperty("arch", "all")
                             val assetsDir = task.outputDir.get().asFile

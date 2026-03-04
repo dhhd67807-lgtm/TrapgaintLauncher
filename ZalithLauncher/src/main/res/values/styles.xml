@@ -10,6 +10,10 @@
         <item name="android:scrollbarThumbHorizontal">@color/background_menu_element</item>
         <item name="android:scrollbarThumbVertical">@color/background_menu_element</item>
         <item name="android:textSize">@dimen/_12ssp</item>
+        <!-- Apply Bebas Neue font to entire app -->
+        <item name="android:fontFamily">@font/bebas_neue_regular</item>
+        <item name="fontFamily">@font/bebas_neue_regular</item>
+        <item name="android:textColor">@color/primary_text</item>
     </style>
 
     <style name="CustomDialogStyle" parent="Theme.AppCompat.Light.Dialog">
@@ -32,5 +36,10 @@
     <style name="RoundImageView">
         <item name="cornerFamily">rounded</item>
         <item name="cornerSize">50%</item>
+    </style>
+
+    <!-- Splash Screen Theme - Simple theme without Android 12+ splash API -->
+    <style name="SplashTheme" parent="AppTheme">
+        <item name="android:windowBackground">@color/background_app</item>
     </style>
 </resources>

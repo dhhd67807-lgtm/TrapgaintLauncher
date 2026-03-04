@@ -25,6 +25,7 @@ import com.movtery.zalithlauncher.setting.AllSettings
 import com.movtery.zalithlauncher.ui.fragment.DownloadModFragment
 import com.movtery.zalithlauncher.utils.NumberWithUnits
 import com.movtery.zalithlauncher.utils.ZHTools
+import com.movtery.zalithlauncher.utils.setDebouncedClickListener
 import com.movtery.zalithlauncher.utils.stringutils.StringUtils
 import net.kdt.pojavlaunch.Tools
 import org.greenrobot.eventbus.EventBus
@@ -103,15 +104,14 @@ class InfoAdapter(
                 .getModByCurseForgeId(item.slug)
 
             binding.apply {
+                // Force clickable state
+                root.isClickable = true
+                root.isFocusable = true
+                
                 parentFragment?.let { fragment ->
                     root.setOnClickListener {
-                        EventBus.getDefault().post(DownloadPageEvent.RecyclerEnableEvent(false))
-
-                        val infoViewModel = ViewModelProvider(fragment.requireActivity())[InfoViewModel::class.java]
-                        infoViewModel.infoItem = item.copy()
-                        infoViewModel.platformHelper = item.platform.helper.copy()
-
-                        ZHTools.swapFragmentWithAnim(fragment, DownloadModFragment::class.java, DownloadModFragment.TAG, null)
+                        // Show mod loader selection dialog
+                        showModLoaderDialog(fragment, item)
                     }
                 }
 
@@ -168,6 +168,37 @@ class InfoAdapter(
                 Platform.MODRINTH -> ContextCompat.getDrawable(mContext, R.drawable.ic_modrinth)
                 Platform.CURSEFORGE -> ContextCompat.getDrawable(mContext, R.drawable.ic_curseforge)
             }
+        }
+        
+        private fun showModLoaderDialog(fragment: Fragment, item: InfoItem) {
+            // Fetch versions first
+            val progressDialog = android.app.ProgressDialog(mContext).apply {
+                setMessage("Loading...")
+                setCancelable(false)
+                show()
+            }
+            
+            Thread {
+                try {
+                    val versions = item.platform.helper.getVersions(item, false)
+                    
+                    fragment.requireActivity().runOnUiThread {
+                        progressDialog.dismiss()
+                        
+                        com.movtery.zalithlauncher.ui.dialog.ModLoaderSelectionDialog(
+                            mContext,
+                            item,
+                            versions ?: emptyList(),
+                            item.platform.helper
+                        ).show()
+                    }
+                } catch (e: Exception) {
+                    fragment.requireActivity().runOnUiThread {
+                        progressDialog.dismiss()
+                        android.widget.Toast.makeText(mContext, "Failed to load versions: ${e.message}", android.widget.Toast.LENGTH_SHORT).show()
+                    }
+                }
+            }.start()
         }
 
         private fun addCategoryView(layout: FlexboxLayout, text: String) {

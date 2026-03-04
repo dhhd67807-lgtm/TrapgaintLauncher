@@ -28,7 +28,7 @@
         android:layout_marginHorizontal="@dimen/_16sdp"
         android:textSize="@dimen/_14ssp"
         android:textStyle="bold"
-        app:layout_constraintEnd_toStartOf="@+id/refresh"
+        app:layout_constraintEnd_toStartOf="@+id/change_skin"
         app:layout_constraintStart_toEndOf="@+id/icon"
         app:layout_constraintTop_toTopOf="@+id/icon" />
 
@@ -37,7 +37,7 @@
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:layout_marginHorizontal="@dimen/_16sdp"
-        app:layout_constraintEnd_toStartOf="@+id/refresh"
+        app:layout_constraintEnd_toStartOf="@+id/change_skin"
         app:layout_constraintStart_toEndOf="@+id/icon"
         app:layout_constraintTop_toBottomOf="@+id/name" />
 
@@ -51,18 +51,38 @@
         android:textStyle="bold"
         android:visibility="gone"
         app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toStartOf="@+id/refresh"
+        app:layout_constraintEnd_toStartOf="@+id/change_skin"
         app:layout_constraintStart_toEndOf="@+id/icon"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <Button
+        android:id="@+id/change_skin"
+        style="@style/Widget.AppCompat.Button"
+        android:layout_width="wrap_content"
+        android:layout_height="@dimen/_36sdp"
+        android:layout_marginEnd="@dimen/_8sdp"
+        android:paddingHorizontal="@dimen/_18sdp"
+        android:paddingVertical="@dimen/_8sdp"
+        android:text="SKIN"
+        android:textColor="#FFFFFF"
+        android:textSize="@dimen/_12ssp"
+        android:textAllCaps="true"
+        android:textStyle="bold"
+        android:background="@drawable/button_purple"
+        android:visibility="gone"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toStartOf="@+id/refresh"
         app:layout_constraintTop_toTopOf="parent" />
 
     <ImageButton
         android:id="@+id/refresh"
         android:layout_width="@dimen/_28sdp"
         android:layout_height="@dimen/_28sdp"
-        android:layout_marginEnd="@dimen/_12sdp"
+        android:layout_marginEnd="@dimen/_8sdp"
         android:background="?android:attr/selectableItemBackgroundBorderless"
         android:scaleType="centerInside"
         android:src="@drawable/ic_refresh"
+        android:visibility="gone"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toStartOf="@+id/delete"
         app:layout_constraintTop_toTopOf="parent" />
@@ -74,7 +94,7 @@
         android:layout_marginEnd="@dimen/_16sdp"
         android:background="?android:attr/selectableItemBackgroundBorderless"
         android:scaleType="centerInside"
-        android:src="@drawable/ic_close"
+        android:src="@drawable/ic_menu_delete_forever"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintTop_toTopOf="parent" />

@@ -46,6 +46,7 @@
             android:name="com.movtery.zalithlauncher.ui.activity.SplashActivity"
             android:exported="true"
             android:launchMode="singleTop"
+            android:theme="@style/SplashTheme"
             android:configChanges="keyboardHidden|orientation|screenSize|smallestScreenSize|screenLayout|keyboard|navigation"
             android:screenOrientation="sensorLandscape" >
             <intent-filter>

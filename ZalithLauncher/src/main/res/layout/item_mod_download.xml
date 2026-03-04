@@ -7,6 +7,8 @@
     android:layout_marginVertical="@dimen/_4sdp"
     android:background="@drawable/background_item"
     android:padding="@dimen/_8sdp"
+    android:clickable="true"
+    android:focusable="true"
     app:ripple_for_constraint="true">
 
     <LinearLayout
@@ -17,6 +19,8 @@
         android:gravity="center_vertical"
         android:background="@drawable/background_mod_category"
         android:padding="@dimen/_4sdp"
+        android:clickable="false"
+        android:focusable="false"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintBottom_toBottomOf="parent">
@@ -26,6 +30,8 @@
             android:layout_width="@dimen/_18sdp"
             android:layout_height="@dimen/_18sdp"
             android:scaleType="centerInside"
+            android:clickable="false"
+            android:focusable="false"
             tools:src="@drawable/ic_neoforge"
             tools:ignore="ContentDescription" />
 
@@ -36,6 +42,8 @@
             android:layout_marginStart="@dimen/_4sdp"
             android:textColor="@color/primary_text"
             android:textSize="@dimen/_11ssp"
+            android:clickable="false"
+            android:focusable="false"
             tools:text="NeoForge"/>
 
     </LinearLayout>
@@ -48,6 +56,8 @@
         android:text="Version ID"
         android:textColor="@color/primary_text"
         android:textSize="@dimen/_14ssp"
+        android:clickable="false"
+        android:focusable="false"
         app:layout_constraintStart_toEndOf="@id/modloader_layout"
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintBottom_toBottomOf="parent"
@@ -60,8 +70,9 @@
         android:layout_marginHorizontal="@dimen/_8sdp"
         android:gravity="end"
         android:ellipsize="marquee"
-        android:focusable="true"
-        android:focusableInTouchMode="true"
+        android:clickable="false"
+        android:focusable="false"
+        android:focusableInTouchMode="false"
         android:marqueeRepeatLimit="marquee_forever"
         android:scrollHorizontally="true"
         android:singleLine="true"
@@ -79,6 +90,8 @@
         android:layout_width="@dimen/_18sdp"
         android:layout_height="@dimen/_18sdp"
         android:visibility="gone"
+        android:clickable="false"
+        android:focusable="false"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintTop_toTopOf="parent"

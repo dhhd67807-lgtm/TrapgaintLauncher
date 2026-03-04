@@ -41,14 +41,8 @@ class VersionManagerFragment : FragmentWithAnim(R.layout.fragment_version_manage
             shortcutsMods.setOnClickListener(fragment)
             gamePath.setOnClickListener(fragment)
             resourcePath.setOnClickListener(fragment)
-            worldPath.setOnClickListener(fragment)
             shaderPath.setOnClickListener(fragment)
-            screenshotPath.setOnClickListener(fragment)
-            logsPath.setOnClickListener(fragment)
-            crashReportPath.setOnClickListener(fragment)
             versionSettings.setOnClickListener(fragment)
-            versionRename.setOnClickListener(fragment)
-            versionCopy.setOnClickListener(fragment)
             versionDelete.setOnClickListener(fragment)
         }
     }
@@ -86,19 +80,9 @@ class VersionManagerFragment : FragmentWithAnim(R.layout.fragment_version_manage
                 }
                 gamePath -> swapFilesFragment(gameDirPath, gameDirPath)
                 resourcePath -> swapFilesFragment(gameDirPath, File(gameDirPath, "/resourcepacks"))
-                worldPath -> swapFilesFragment(gameDirPath, File(gameDirPath, "/saves"))
                 shaderPath -> swapFilesFragment(gameDirPath, File(gameDirPath, "/shaderpacks"))
-                screenshotPath -> swapFilesFragment(gameDirPath, File(gameDirPath, "/screenshots"))
-                logsPath -> swapFilesFragment(gameDirPath, File(gameDirPath, "/logs"))
-                crashReportPath -> swapFilesFragment(gameDirPath, File(gameDirPath, "/crash-reports"))
 
                 versionSettings -> ZHTools.swapFragmentWithAnim(this@VersionManagerFragment, VersionConfigFragment::class.java, VersionConfigFragment.TAG, null)
-                versionRename -> {
-                    VersionsManager.openRenameDialog(activity, version) {
-                        Tools.backToMainMenu(activity) //重命名前，为了不出现问题，需要退出当前Fragment
-                    }
-                }
-                versionCopy -> VersionsManager.openCopyDialog(activity, version)
                 versionDelete -> {
                     TipDialog.Builder(activity)
                         .setTitle(R.string.generic_warning)

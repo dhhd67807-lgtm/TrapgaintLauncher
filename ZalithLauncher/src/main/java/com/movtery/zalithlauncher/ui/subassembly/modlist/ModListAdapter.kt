@@ -50,6 +50,10 @@ class ModListAdapter(
         private val mContext = binding.root.context
 
         fun setData(item: ModListItemBean) {
+            // Force clickable state
+            itemView.isClickable = true
+            itemView.isFocusable = true
+            
             itemView.setOnClickListener {
                 fragment.switchToChild(
                     item.getAdapter(),

@@ -5,6 +5,7 @@ import com.kdt.mcgui.ProgressLayout
 import com.movtery.zalithlauncher.R
 import com.movtery.zalithlauncher.event.value.InstallGameEvent
 import com.movtery.zalithlauncher.feature.log.Logging
+import com.movtery.zalithlauncher.feature.version.VersionInfo
 import com.movtery.zalithlauncher.feature.version.VersionsManager
 import com.movtery.zalithlauncher.task.Task
 import net.kdt.pojavlaunch.Tools
@@ -22,11 +23,22 @@ class GameInstaller(
     private val realVersion: String = installEvent.minecraftVersion
     private val customVersionName: String = installEvent.customVersionName
     private val taskMap: Map<Addon, InstallTaskItem> = installEvent.taskMap
+    private val loaderType: String = installEvent.loaderType
     private val targetVersionFolder = VersionsManager.getVersionPath(customVersionName)
     private val vanillaVersionFolder = VersionsManager.getVersionPath(realVersion)
 
+    companion object {
+        @JvmField
+        var currentInstallingLoader: String = "VANILLA"
+    }
+
     fun installGame() {
-        Logging.i("Minecraft Downloader", "Start downloading the version: $realVersion")
+        // Store the loader type for progress tracking
+        currentInstallingLoader = loaderType
+        
+        Logging.i("Minecraft Downloader", "Start downloading the version: $realVersion (Loader: $loaderType)")
+        Logging.i("Minecraft Downloader", "Custom version name: $customVersionName")
+        Logging.i("Minecraft Downloader", "Task map size: ${taskMap.size}")
 
         if (taskMap.isNotEmpty()) {
             ProgressKeeper.submitProgress(ProgressLayout.INSTALL_RESOURCE, 0, R.string.download_install_download_file, 0, 0, 0)
@@ -51,6 +63,13 @@ class GameInstaller(
                                     FileUtils.copyFile(vanillaJsonFile, File(targetVersionFolder, "$customVersionName.json"))
                                 }
                             }
+                            
+                            // Set the newly installed version as current
+                            VersionsManager.saveCurrentVersion(customVersionName)
+                            
+                            // Refresh versions list to pick up the newly installed version
+                            VersionsManager.refresh("GameInstaller")
+                            
                             //ModLoader任务为空，接下来的无意义ModLoader任务将彻底跳过！
                             return@runTask null
                         }
@@ -76,7 +95,16 @@ class GameInstaller(
 
                             Logging.i("Install Version", "Installing ModLoader: ${taskPair.second.selectedVersion}")
                             val file = taskPair.second.task.run(customVersionName)
+                            
+                            // Save version info with loader type
+                            saveVersionInfo(taskPair.first, taskPair.second.selectedVersion)
+                            
                             return@runTask Pair(file, taskPair.second)
+                        }
+
+                        // If no modloader task, save vanilla version info
+                        if (modloaderTask.get() == null) {
+                            saveVersionInfo(null, null)
                         }
 
                         null
@@ -86,6 +114,15 @@ class GameInstaller(
                                 pair.second.endTask?.endTask(activity, it)
                             }
                         }
+                        
+                        // Ensure JSON file matches the custom version name
+                        ensureJsonFileMatchesFolderName()
+                        
+                        // Set the newly installed version as current after all tasks complete
+                        VersionsManager.saveCurrentVersion(customVersionName)
+                        
+                        // Refresh versions list to pick up the newly installed version
+                        VersionsManager.refresh("GameInstaller")
                     }.onThrowable { e ->
                         Tools.showErrorRemote(e)
                     }.execute()
@@ -99,5 +136,73 @@ class GameInstaller(
                 }
             }
         )
+    }
+    
+    private fun saveVersionInfo(addon: Addon?, loaderVersion: String?) {
+        val loaderInfo = when {
+            addon == Addon.FABRIC && loaderVersion != null -> arrayOf(
+                VersionInfo.LoaderInfo("Fabric", loaderVersion)
+            )
+            addon == Addon.FORGE && loaderVersion != null -> arrayOf(
+                VersionInfo.LoaderInfo("Forge", loaderVersion)
+            )
+            addon == Addon.NEOFORGE && loaderVersion != null -> arrayOf(
+                VersionInfo.LoaderInfo("NeoForge", loaderVersion)
+            )
+            addon == Addon.QUILT && loaderVersion != null -> arrayOf(
+                VersionInfo.LoaderInfo("Quilt", loaderVersion)
+            )
+            addon == Addon.OPTIFINE && loaderVersion != null -> arrayOf(
+                VersionInfo.LoaderInfo("OptiFine", loaderVersion)
+            )
+            else -> null
+        }
+        
+        val versionInfo = VersionInfo(realVersion, loaderInfo)
+        versionInfo.save(targetVersionFolder)
+        
+        Logging.i("GameInstaller", "Saved version info for $customVersionName: ${versionInfo.getInfoString()}")
+    }
+    
+    private fun ensureJsonFileMatchesFolderName() {
+        // Make sure the JSON file name matches the folder name
+        // This is required for VersionsManager to recognize the version as valid
+        val expectedJsonFile = File(targetVersionFolder, "$customVersionName.json")
+        
+        if (!expectedJsonFile.exists()) {
+            Logging.i("GameInstaller", "JSON file $customVersionName.json not found in target folder")
+            
+            // First, look for any JSON file in the target folder
+            var foundJson = false
+            targetVersionFolder.listFiles()?.forEach { file ->
+                if (file.isFile && file.name.endsWith(".json") && !file.name.equals("$customVersionName.json")) {
+                    Logging.i("GameInstaller", "Found JSON file ${file.name}, renaming to $customVersionName.json")
+                    file.renameTo(expectedJsonFile)
+                    foundJson = true
+                    return@forEach
+                }
+            }
+            
+            // If no JSON found and this is a Forge installation, copy from vanilla
+            // Forge installer will update it when the game is first launched
+            if (!foundJson && loaderType == "FORGE") {
+                val vanillaJsonFile = File(vanillaVersionFolder, "$realVersion.json")
+                if (vanillaJsonFile.exists()) {
+                    Logging.i("GameInstaller", "Copying vanilla JSON for Forge from ${vanillaJsonFile.absolutePath}")
+                    try {
+                        FileUtils.copyFile(vanillaJsonFile, expectedJsonFile)
+                        Logging.i("GameInstaller", "Successfully copied vanilla JSON for Forge installation")
+                    } catch (e: Exception) {
+                        Logging.e("GameInstaller", "Failed to copy vanilla JSON", e)
+                    }
+                } else {
+                    Logging.e("GameInstaller", "Vanilla JSON file not found at ${vanillaJsonFile.absolutePath}")
+                }
+            } else if (!foundJson) {
+                Logging.w("GameInstaller", "No JSON file found for $customVersionName")
+            }
+        } else {
+            Logging.i("GameInstaller", "JSON file already exists: ${expectedJsonFile.absolutePath}")
+        }
     }
 }

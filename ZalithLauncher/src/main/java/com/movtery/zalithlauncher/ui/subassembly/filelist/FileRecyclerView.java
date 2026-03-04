@@ -89,6 +89,14 @@ public class FileRecyclerView extends LinearLayout {
         this.fileRecyclerViewCreator.setOnMultiSelectListener(listener);
     }
 
+    public void setOnDeleteClickListener(FileRecyclerAdapter.OnDeleteClickListener listener) {
+        this.fileRecyclerViewCreator.setOnDeleteClickListener(listener);
+    }
+
+    public void setShowDeleteButton(boolean show) {
+        this.fileRecyclerViewCreator.setShowDeleteButton(show);
+    }
+
     public void setTitleListener(SetTitleListener setTitleListener) {
         this.mSetTitleListener = setTitleListener;
     }

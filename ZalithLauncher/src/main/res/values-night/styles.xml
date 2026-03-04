@@ -10,6 +10,12 @@
         <item name="android:scrollbarThumbHorizontal">@color/background_menu_element</item>
         <item name="android:scrollbarThumbVertical">@color/background_menu_element</item>
         <item name="android:textSize">@dimen/_12ssp</item>
+        <!-- Apply Bebas Neue font to entire app -->
+        <item name="android:fontFamily">@font/bebas_neue_regular</item>
+        <item name="fontFamily">@font/bebas_neue_regular</item>
+        <item name="android:textColor">@color/primary_text</item>
+        <item name="android:textColorPrimary">@color/primary_text</item>
+        <item name="android:textColorSecondary">@color/primary_text</item>
     </style>
 
     <style name="CustomDialogStyle" parent="Theme.AppCompat.Dialog">
@@ -22,5 +28,10 @@
         <item name="android:windowBackground">@drawable/dialog_background</item>
         <item name="android:scrollbarThumbHorizontal">@color/background_menu_element</item>
         <item name="android:scrollbarThumbVertical">@color/background_menu_element</item>
+    </style>
+
+    <!-- Splash Screen Theme for dark mode - Simple theme without Android 12+ splash API -->
+    <style name="SplashTheme" parent="AppTheme">
+        <item name="android:windowBackground">@color/background_app</item>
     </style>
 </resources>

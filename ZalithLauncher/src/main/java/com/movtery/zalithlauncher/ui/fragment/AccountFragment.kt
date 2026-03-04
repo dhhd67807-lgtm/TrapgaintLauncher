@@ -54,6 +54,8 @@ import com.movtery.zalithlauncher.ui.subassembly.account.AccountAdapter.AccountU
 import com.movtery.zalithlauncher.ui.subassembly.account.AccountViewWrapper
 import com.movtery.zalithlauncher.ui.subassembly.account.SelectAccountListener
 import com.movtery.zalithlauncher.utils.ZHTools
+import com.movtery.zalithlauncher.utils.DebounceClickListener
+import com.movtery.zalithlauncher.utils.setDebouncedClickListener
 import com.movtery.zalithlauncher.utils.http.NetworkUtils
 import com.movtery.zalithlauncher.utils.path.PathManager
 import com.movtery.zalithlauncher.utils.stringutils.StringUtils
@@ -114,7 +116,7 @@ class AccountFragment : FragmentWithAnim(R.layout.fragment_account), View.OnClic
         savedInstanceState: Bundle?
     ): View {
         binding = FragmentAccountBinding.inflate(layoutInflater)
-        mAccountViewWrapper = AccountViewWrapper(binding = binding.viewAccount)
+        mAccountViewWrapper = AccountViewWrapper(this, binding.viewAccount)
         mProgressDialog = ZHTools.createTaskRunningDialog(binding.root.context)
         return binding.root
     }
@@ -154,6 +156,10 @@ class AccountFragment : FragmentWithAnim(R.layout.fragment_account), View.OnClic
                         if (userSkinFile.exists()) FileUtils.deleteQuietly(userSkinFile)
                         reloadAccounts()
                     }.showDialog()
+            }
+            
+            override fun onChangeSkin(account: MinecraftAccount) {
+                mAccountViewWrapper.changeSkin(account)
             }
         })
 
@@ -221,8 +227,31 @@ class AccountFragment : FragmentWithAnim(R.layout.fragment_account), View.OnClic
                 }
             }
 
-            addServer.setOnClickListener(this@AccountFragment)
-            returnButton.setOnClickListener(this@AccountFragment)
+            returnButton.setDebouncedClickListener { ZHTools.onBackPressed(requireActivity()) }
+            
+            // Set red background for return button
+            returnButton.setBackgroundResource(R.drawable.button_red)
+            returnButton.setTextColor(ContextCompat.getColor(context, android.R.color.white))
+            
+            // Force clickable state
+            microsoftCard.isClickable = true
+            microsoftCard.isFocusable = true
+            offlineCard.isClickable = true
+            offlineCard.isFocusable = true
+            
+            // Add click handlers for account cards
+            microsoftCard.setOnClickListener {
+                ZHTools.swapFragmentWithAnim(
+                    this@AccountFragment,
+                    MicrosoftLoginFragment::class.java,
+                    MicrosoftLoginFragment.TAG,
+                    null
+                )
+            }
+            
+            offlineCard.setOnClickListener {
+                localLogin()
+            }
         }
 
         reloadAccounts()
@@ -236,6 +265,21 @@ class AccountFragment : FragmentWithAnim(R.layout.fragment_account), View.OnClic
 
         this.mAccountAdapter.notifyDataSetChanged()
         binding.accountsRecycler.scheduleLayoutAnimation()
+        
+        // Show cards if no accounts, show list if accounts exist
+        updateViewVisibility()
+    }
+    
+    private fun updateViewVisibility() {
+        if (mAccountsData.isEmpty()) {
+            // No accounts - show cards
+            binding.accountCardsLayout.visibility = View.VISIBLE
+            binding.accountListLayout.visibility = View.GONE
+        } else {
+            // Has accounts - show normal list
+            binding.accountCardsLayout.visibility = View.GONE
+            binding.accountListLayout.visibility = View.VISIBLE
+        }
     }
 
     private fun reloadAccounts() {
@@ -264,38 +308,12 @@ class AccountFragment : FragmentWithAnim(R.layout.fragment_account), View.OnClic
             .setConfirmListener { editText, _ ->
                 val string = editText.text.toString()
                 if (string.length <= 2 || string.length > 16 || mLocalNamePattern.matcher(string).find()) {
-                    TipDialog.Builder(requireContext())
-                        .setTitle(R.string.generic_warning)
-                        .setMessage(R.string.account_local_account_invalid)
-                        .setWarning()
-                        .setTextBeautifier { _, messageText ->
-                            val text = messageText.text.toString()
-                            val startTag = "[RED;BOLD]"
-                            val endTag = "[/RED;BOLD]"
-
-                            val startIndex = text.indexOf(startTag)
-                            val endIndex = text.indexOf(endTag)
-
-                            if (startIndex != -1 && endIndex != -1 && endIndex > startIndex) {
-                                val styledText = text.substring(startIndex + startTag.length, endIndex)
-                                val plainText = text.replace(startTag, "").replace(endTag, "")
-                                val adjustedEndIndex = startIndex + styledText.length
-
-                                val spannableString = SpannableString(plainText)
-                                spannableString.spanText(startIndex, adjustedEndIndex, ForegroundColorSpan(Color.RED))
-                                spannableString.spanText(startIndex, adjustedEndIndex, StyleSpan(Typeface.BOLD))
-
-                                messageText.text = spannableString
-                            }
-                        }
-                        .setCenterMessage(false)
-                        .setConfirmClickListener { startLogin(string) }
-                        .setCancelable(false)
-                        .setConfirmButtonCountdown(3000L)
-                        .showDialog()
-                } else startLogin(string)
-
-                true
+                    editText.error = getString(R.string.account_local_account_invalid)
+                    false
+                } else {
+                    startLogin(string)
+                    true
+                }
             }.showDialog()
     }
 
@@ -486,6 +504,13 @@ class AccountFragment : FragmentWithAnim(R.layout.fragment_account), View.OnClic
         super.onStart()
         EventBus.getDefault().register(this)
     }
+    
+    override fun onResume() {
+        super.onResume()
+        // Auto-refresh account info and list when returning to this fragment
+        mAccountViewWrapper.refreshAccountInfo()
+        reloadRecyclerView()
+    }
 
     override fun onStop() {
         super.onStop()
@@ -499,26 +524,7 @@ class AccountFragment : FragmentWithAnim(R.layout.fragment_account), View.OnClic
     }
 
     override fun onClick(v: View) {
-        val activity = requireActivity()
-        binding.apply {
-            when (v) {
-                returnButton -> ZHTools.onBackPressed(activity)
-                addServer -> {
-                    refreshActionPopupWindow(v, ViewAddOtherServerBinding.inflate(LayoutInflater.from(activity)).apply {
-                        val onClickListener = View.OnClickListener { v1 ->
-                            when(v1) {
-                                addOtherServer -> showServerTypeSelectDialog(R.string.other_login_yggdrasil_api, 0)
-                                addUniformPass -> showServerTypeSelectDialog(R.string.other_login_32_bit_server, 1)
-                            }
-                            mServerActionPopupWindow.dismiss()
-                        }
-                        addOtherServer.setOnClickListener(onClickListener)
-                        addUniformPass.setOnClickListener(onClickListener)
-                    })
-                }
-                else -> {}
-            }
-        }
+        // No longer needed - using debounced click listeners
     }
 
     override fun slideIn(animPlayer: AnimPlayer) {

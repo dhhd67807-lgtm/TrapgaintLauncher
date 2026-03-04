@@ -132,33 +132,6 @@
                 android:padding="@dimen/_8sdp">
 
                 <ImageView
-                    android:id="@+id/world_image"
-                    android:layout_width="@dimen/_28sdp"
-                    android:layout_height="@dimen/_28sdp"
-                    android:layout_centerVertical="true"
-                    android:layout_marginStart="@dimen/_4sdp"
-                    android:background="@android:color/transparent"
-                    android:scaleType="fitCenter"
-                    android:scaleX="0.78"
-                    android:scaleY="0.78"
-                    app:srcCompat="@drawable/ic_profile_saves" />
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_centerVertical="true"
-                    android:layout_marginStart="@dimen/_8sdp"
-                    android:layout_toEndOf="@+id/world_image"
-                    android:text="@string/download_classify_world"
-                    android:textColor="@color/black_or_white" />
-            </com.movtery.zalithlauncher.ui.layout.AnimRelativeLayout>
-
-            <com.movtery.zalithlauncher.ui.layout.AnimRelativeLayout
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:padding="@dimen/_8sdp">
-
-                <ImageView
                     android:id="@+id/shader_pack_image"
                     android:layout_width="@dimen/_28sdp"
                     android:layout_height="@dimen/_28sdp"

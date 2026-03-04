@@ -100,9 +100,7 @@ class FabricLikeUtils private constructor(
     val name: String get() = addon.addonName
 
     fun getDownloadTask(gameVersion: String?, loaderVersion: String?): FabricLikeDownloadTask {
-        return if ("Fabric" == addon.addonName) {
-            FabricLikeDownloadTask(this)
-        } else FabricLikeDownloadTask(this, gameVersion, loaderVersion)
+        return FabricLikeDownloadTask(this, gameVersion, loaderVersion)
     }
 
     companion object {

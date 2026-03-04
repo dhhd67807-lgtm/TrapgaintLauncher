@@ -117,12 +117,39 @@ object VersionsManager {
 
             //通过判断是否存在版本的.json文件，来确定其是否为一个版本
             val jsonFile = File(versionFile, "${versionFile.name}.json")
+            android.util.Log.d("VersionsManager", "Processing folder: ${versionFile.name}, looking for: ${jsonFile.name}")
+            android.util.Log.d("VersionsManager", "JSON file exists: ${jsonFile.exists()}")
+            
             if (jsonFile.exists() && jsonFile.isFile) {
                 isVersion = true
                 val versionInfoFile = File(getZalithVersionPath(versionFile), "VersionInfo.json")
                 if (refreshVersionInfo) FileUtils.deleteQuietly(versionInfoFile)
                 if (!versionInfoFile.exists()) {
                     VersionInfoUtils.parseJson(jsonFile)?.save(versionFile)
+                }
+            } else {
+                // JSON file doesn't match folder name - try to find and rename it
+                // This handles cases where Forge/Fabric was installed with a custom name
+                android.util.Log.d("VersionsManager", "JSON file not found, searching for mismatched files...")
+                val files = versionFile.listFiles()
+                android.util.Log.d("VersionsManager", "Files in folder: ${files?.map { it.name }?.joinToString(", ")}")
+                
+                files?.forEach { file ->
+                    if (file.isFile && file.name.endsWith(".json") && file.name != "${versionFile.name}.json") {
+                        android.util.Log.i("VersionsManager", "Found mismatched JSON file: ${file.name} in folder ${versionFile.name}, renaming...")
+                        if (file.renameTo(jsonFile)) {
+                            android.util.Log.i("VersionsManager", "Successfully renamed ${file.name} to ${jsonFile.name}")
+                            isVersion = true
+                            val versionInfoFile = File(getZalithVersionPath(versionFile), "VersionInfo.json")
+                            if (refreshVersionInfo) FileUtils.deleteQuietly(versionInfoFile)
+                            if (!versionInfoFile.exists()) {
+                                VersionInfoUtils.parseJson(jsonFile)?.save(versionFile)
+                            }
+                            return@forEach
+                        } else {
+                            android.util.Log.e("VersionsManager", "Failed to rename ${file.name} to ${jsonFile.name}")
+                        }
+                    }
                 }
             }
 
@@ -138,7 +165,8 @@ object VersionsManager {
 
             Logging.i("VersionsManager", "Identified and added version: ${version.getVersionName()}, " +
                     "Path: (${version.getVersionPath()}), " +
-                    "Info: ${version.getVersionInfo()?.getInfoString()}")
+                    "Info: ${version.getVersionInfo()?.getInfoString()}, " +
+                    "isValid: $isVersion")
         }
     }
 
@@ -157,7 +185,12 @@ object VersionsManager {
 
         return runCatching {
             val versionString = currentGameInfo.version
-            getVersion(versionString) ?: run {
+            android.util.Log.d("VersionsManager", "getCurrentVersion: currentGameInfo.version = $versionString")
+            android.util.Log.d("VersionsManager", "Available versions: ${versions.map { it.getVersionName() }}")
+            val foundVersion = getVersion(versionString)
+            android.util.Log.d("VersionsManager", "getVersion($versionString) returned: ${foundVersion?.getVersionName() ?: "null"}")
+            foundVersion ?: run {
+                android.util.Log.d("VersionsManager", "Version not found, returning first valid version")
                 return returnVersionByFirst()
             }
         }.getOrElse { e ->
@@ -207,9 +240,12 @@ object VersionsManager {
      */
     fun saveCurrentVersion(versionName: String) {
         runCatching {
+            android.util.Log.d("VersionsManager", "saveCurrentVersion called with: $versionName")
             currentGameInfo.apply {
                 version = versionName
+                android.util.Log.d("VersionsManager", "Set currentGameInfo.version to: $version")
                 saveCurrentInfo()
+                android.util.Log.d("VersionsManager", "Saved currentGameInfo to file")
             }
         }.onFailure { e -> Logging.e("Save Current Version", Tools.printToString(e)) }
     }
@@ -387,7 +423,17 @@ object VersionsManager {
 
     private fun getVersion(name: String?): Version? {
         name?.let { versionName ->
-            return versions.find { it.getVersionName() == versionName }?.takeIf { it.isValid() }
+            android.util.Log.d("VersionsManager", "getVersion: Looking for '$versionName'")
+            val found = versions.find { it.getVersionName() == versionName }
+            android.util.Log.d("VersionsManager", "getVersion: Found version: ${found?.getVersionName() ?: "null"}")
+            if (found != null) {
+                val isValid = found.isValid()
+                android.util.Log.d("VersionsManager", "getVersion: Version isValid: $isValid")
+                if (!isValid) {
+                    android.util.Log.e("VersionsManager", "getVersion: Version '${found.getVersionName()}' exists but is NOT VALID!")
+                }
+            }
+            return found?.takeIf { it.isValid() }
         }
         return null
     }

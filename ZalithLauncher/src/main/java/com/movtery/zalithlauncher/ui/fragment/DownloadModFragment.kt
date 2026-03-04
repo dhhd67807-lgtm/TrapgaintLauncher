@@ -135,6 +135,27 @@ class DownloadModFragment : ModListFragment() {
         val pattern = RELEASE_REGEX
 
         val releaseCheckBoxChecked = releaseCheckBox.isChecked
+        
+        // Get all compatible mod loaders from the versions
+        val compatibleModLoaders = mutableSetOf<ModLoader>()
+        versions?.forEach { versionItem ->
+            if (versionItem is ModVersionItem) {
+                compatibleModLoaders.addAll(versionItem.modloaders)
+            }
+        }
+        
+        // Get all installed versions
+        val installedVersions = VersionsManager.getVersions()
+        
+        // Filter to only show mod loaders that have installed versions
+        val availableModLoaders = compatibleModLoaders.filter { modLoader ->
+            installedVersions.any { version ->
+                version.getVersionInfo()?.loaderInfo?.any { loader -> 
+                    Objects.equals(modLoader.loaderName, loader.name) 
+                } ?: false
+            }
+        }
+        
         //在Key内同时记录MC版本，与Mod加载器信息，以便之后细分Mod加载器
         val mModVersionsByMinecraftVersion: MutableMap<Pair<String, ModLoader?>, MutableList<VersionItem>> = HashMap()
 
@@ -155,15 +176,36 @@ class DownloadModFragment : ModListFragment() {
                 if (versionItem is ModVersionItem) {
                     val modloaders = versionItem.modloaders
                     if (modloaders.isNotEmpty()) {
-                        modloaders.forEach {
-                            addIfAbsent(mModVersionsByMinecraftVersion, Pair(mcVersion, it), versionItem)
+                        modloaders.forEach { modLoader ->
+                            // Only add if this mod loader is available (has installed versions)
+                            if (availableModLoaders.contains(modLoader)) {
+                                // Check if this MC version has this mod loader installed
+                                val hasInstalledVersion = installedVersions.any { version ->
+                                    val versionMC = version.getVersionInfo()?.minecraftVersion
+                                    val hasLoader = version.getVersionInfo()?.loaderInfo?.any { loader ->
+                                        Objects.equals(modLoader.loaderName, loader.name)
+                                    } ?: false
+                                    Objects.equals(versionMC, mcVersion) && hasLoader
+                                }
+                                
+                                if (hasInstalledVersion) {
+                                    addIfAbsent(mModVersionsByMinecraftVersion, Pair(mcVersion, modLoader), versionItem)
+                                }
+                            }
                         }
                         //当这个版本是一个 ModVersionItem 的时候，则检查其Mod加载器是否不为空，如果不为空，则将版本支持的Mod加载器，放到不同的Mod加载器列表中
                         //这样会让用户更容易找到匹配自己需要的Mod加载器的版本
                         continue //已经分类完毕，没有必要再将这个版本加入进普通的版本列表中了
                     }
                 }
-                addIfAbsent(mModVersionsByMinecraftVersion, Pair(mcVersion, null), versionItem)
+                // For non-mod items or items without mod loaders, check if vanilla version exists
+                val hasVanillaVersion = installedVersions.any { version ->
+                    val versionMC = version.getVersionInfo()?.minecraftVersion
+                    Objects.equals(versionMC, mcVersion)
+                }
+                if (hasVanillaVersion) {
+                    addIfAbsent(mModVersionsByMinecraftVersion, Pair(mcVersion, null), versionItem)
+                }
             }
         })
 
@@ -174,61 +216,80 @@ class DownloadModFragment : ModListFragment() {
         var firstAdaptIndex: Int? = null
 
         val mData: MutableList<ModListItemBean> = ArrayList()
-        mModVersionsByMinecraftVersion.entries
-            .sortedWith { entry1, entry2 ->
-                val mcVersionComparison = -VersionNumber.compare(entry1.key.first, entry2.key.first)
-                if (mcVersionComparison != 0) {
-                    mcVersionComparison
-                } else {
-                    val name1 = entry1.key.second?.name ?: ""
-                    val name2 = entry2.key.second?.name ?: ""
-                    //保证有ModLoader的版本在前
-                    if (name1.isEmpty() && name2.isNotEmpty()) 1
-                    else if (name1.isNotEmpty() && name2.isEmpty()) -1
-                    else name1.compareTo(name2)
+        
+        // If no compatible versions found, show message for missing mod loaders
+        if (mModVersionsByMinecraftVersion.isEmpty() && compatibleModLoaders.isNotEmpty()) {
+            val missingLoaders = compatibleModLoaders.filter { !availableModLoaders.contains(it) }
+            if (missingLoaders.isNotEmpty()) {
+                // Add placeholder items showing which mod loaders need to be downloaded
+                missingLoaders.forEach { modLoader ->
+                    mData.add(
+                        ModListItemBean(
+                            "Download ${modLoader.loaderName} to continue",
+                            modLoader,
+                            false,
+                            VersionAdapter(mInfoItem, platformHelper, emptyList())
+                        )
+                    )
                 }
             }
-            .forEachIndexed { index: Int, entry: Map.Entry<Pair<String, ModLoader?>, List<VersionItem>> ->
-                currentTask?.apply { if (isCancelled) return }
-
-                val isAdapt: Boolean = when (mInfoItem.classify) {
-                    Classify.MODPACK -> false
-                    else -> currentVersion?.let { version ->
-                        val itemVersion = VersionNumber.asVersion(entry.key.first).canonical
-                        val currentVersionString = VersionNumber.asVersion(version.getVersionInfo()?.minecraftVersion ?: "").canonical
-
-                        if (!Objects.equals(itemVersion, currentVersionString)) return@let false
-
-                        val modloader = entry.key.second
-                        val loaderInfo = version.getVersionInfo()?.loaderInfo
-
-                        when {
-                            //资源没有模组加载器信息，直接判定适配
-                            modloader == null -> true
-                            //资源有模组加载器，但当前版本没有模组加载器信息，不适配
-                            //（不装模组加载器你想装什么模组？）
-                            loaderInfo == null -> false
-                            //匹配模组加载器
-                            else -> loaderInfo.any { loader -> Objects.equals(modloader.loaderName, loader.name) }
-                        }
-                    } ?: false
-                }
-
-                if (isAdapt) {
-                    firstAdaptIndex ?: run {
-                        firstAdaptIndex = index
+        } else {
+            mModVersionsByMinecraftVersion.entries
+                .sortedWith { entry1, entry2 ->
+                    val mcVersionComparison = -VersionNumber.compare(entry1.key.first, entry2.key.first)
+                    if (mcVersionComparison != 0) {
+                        mcVersionComparison
+                    } else {
+                        val name1 = entry1.key.second?.name ?: ""
+                        val name2 = entry2.key.second?.name ?: ""
+                        //保证有ModLoader的版本在前
+                        if (name1.isEmpty() && name2.isNotEmpty()) 1
+                        else if (name1.isNotEmpty() && name2.isEmpty()) -1
+                        else name1.compareTo(name2)
                     }
                 }
+                .forEachIndexed { index: Int, entry: Map.Entry<Pair<String, ModLoader?>, List<VersionItem>> ->
+                    currentTask?.apply { if (isCancelled) return }
 
-                mData.add(
-                    ModListItemBean(
-                        entry.key.first,
-                        entry.key.second,
-                        isAdapt,
-                        VersionAdapter(mInfoItem, platformHelper, entry.value)
+                    val isAdapt: Boolean = when (mInfoItem.classify) {
+                        Classify.MODPACK -> false
+                        else -> currentVersion?.let { version ->
+                            val itemVersion = VersionNumber.asVersion(entry.key.first).canonical
+                            val currentVersionString = VersionNumber.asVersion(version.getVersionInfo()?.minecraftVersion ?: "").canonical
+
+                            if (!Objects.equals(itemVersion, currentVersionString)) return@let false
+
+                            val modloader = entry.key.second
+                            val loaderInfo = version.getVersionInfo()?.loaderInfo
+
+                            when {
+                                //资源没有模组加载器信息，直接判定适配
+                                modloader == null -> true
+                                //资源有模组加载器，但当前版本没有模组加载器信息，不适配
+                                //（不装模组加载器你想装什么模组？）
+                                loaderInfo == null -> false
+                                //匹配模组加载器
+                                else -> loaderInfo.any { loader -> Objects.equals(modloader.loaderName, loader.name) }
+                            }
+                        } ?: false
+                    }
+
+                    if (isAdapt) {
+                        firstAdaptIndex ?: run {
+                            firstAdaptIndex = index
+                        }
+                    }
+
+                    mData.add(
+                        ModListItemBean(
+                            entry.key.first,
+                            entry.key.second,
+                            isAdapt,
+                            VersionAdapter(mInfoItem, platformHelper, entry.value)
+                        )
                     )
-                )
-            }
+                }
+        }
 
         currentTask?.apply { if (isCancelled) return }
 

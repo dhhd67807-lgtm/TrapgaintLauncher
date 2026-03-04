@@ -9,6 +9,7 @@
         android:layout_width="match_parent"
         android:layout_height="@dimen/_35sdp"
         android:background="@color/background_menu_top"
+        android:visibility="gone"
         app:layout_constraintTop_toTopOf="parent">
 
         <com.movtery.zalithlauncher.ui.view.AnimTextView
@@ -18,7 +19,7 @@
             android:layout_marginStart="@dimen/_12sdp"
             android:background="?android:attr/selectableItemBackground"
             android:textColor="@color/menu_bar_text"
-            android:textSize="@dimen/_16ssp"
+            android:textSize="@dimen/_18ssp"
             android:textStyle="bold"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintStart_toStartOf="parent"
@@ -30,7 +31,7 @@
         android:layout_width="match_parent"
         android:layout_height="0dp"
         app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/title_layout">
+        app:layout_constraintTop_toTopOf="parent">
 
         <androidx.recyclerview.widget.RecyclerView
             android:id="@+id/recycler_view"
@@ -75,13 +76,55 @@
                 app:layout_constraintStart_toEndOf="@+id/shadowView2"
                 app:layout_constraintTop_toTopOf="parent">
 
+                <ImageView
+                    android:id="@+id/trapcode_logo"
+                    android:layout_width="@dimen/_240sdp"
+                    android:layout_height="@dimen/_240sdp"
+                    android:src="@drawable/trapcode"
+                    android:scaleType="fitCenter"
+                    app:layout_constraintTop_toTopOf="parent"
+                    app:layout_constraintBottom_toTopOf="@+id/star_icon"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintVertical_chainStyle="packed" />
+
+                <ImageView
+                    android:id="@+id/star_icon"
+                    android:layout_width="@dimen/_32sdp"
+                    android:layout_height="@dimen/_32sdp"
+                    android:layout_marginTop="@dimen/_16sdp"
+                    android:src="@drawable/cs_star_8"
+                    android:scaleType="fitCenter"
+                    app:layout_constraintTop_toBottomOf="@+id/trapcode_logo"
+                    app:layout_constraintBottom_toTopOf="@+id/splash_text"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    android:contentDescription="Star" />
+
                 <TextView
                     android:id="@+id/splash_text"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_margin="@dimen/_12sdp"
                     android:text="@string/splash_screen_desc"
-                    app:layout_constraintTop_toTopOf="parent"
+                    android:gravity="center"
+                    android:textSize="@dimen/_12ssp"
+                    app:layout_constraintTop_toBottomOf="@+id/star_icon"
+                    app:layout_constraintBottom_toTopOf="@+id/progress_text"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintEnd_toEndOf="parent" />
+
+                <TextView
+                    android:id="@+id/progress_text"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="@dimen/_8sdp"
+                    android:text="0%"
+                    android:textSize="@dimen/_24ssp"
+                    android:textStyle="bold"
+                    android:visibility="gone"
+                    app:layout_constraintTop_toBottomOf="@+id/splash_text"
+                    app:layout_constraintBottom_toBottomOf="parent"
                     app:layout_constraintStart_toStartOf="parent"
                     app:layout_constraintEnd_toEndOf="parent" />
 
@@ -107,6 +150,7 @@
         android:layout_width="match_parent"
         android:layout_height="4dp"
         android:background="@drawable/shadow_gradient_down"
+        android:visibility="gone"
         app:layout_constraintTop_toBottomOf="@id/title_layout" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

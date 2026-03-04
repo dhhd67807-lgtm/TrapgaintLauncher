@@ -40,6 +40,8 @@
                 android:paddingVertical="@dimen/_4sdp"
                 android:scrollbarThumbVertical="@color/background_menu_element"
                 android:scrollbars="vertical"
+                android:nestedScrollingEnabled="true"
+                android:overScrollMode="never"
                 app:layout_constraintBottom_toBottomOf="parent"
                 app:layout_constraintEnd_toStartOf="parent"
                 app:layout_constraintStart_toStartOf="parent"
@@ -47,32 +49,52 @@
 
             <androidx.constraintlayout.widget.ConstraintLayout
                 android:id="@+id/loading_layout"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
                 android:orientation="vertical"
                 android:visibility="gone"
+                android:paddingHorizontal="@dimen/_8sdp"
+                android:paddingVertical="@dimen/_4sdp"
                 app:layout_constraintBottom_toBottomOf="parent"
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintTop_toTopOf="parent">
 
-                <ProgressBar
-                    android:id="@+id/loading_progress"
-                    style="?android:attr/progressBarStyle"
-                    android:layout_width="wrap_content"
+                <!-- Skeleton Loading Items -->
+                <include layout="@layout/skeleton_mod_item"
+                    android:id="@+id/skeleton_1"
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    app:layout_constraintEnd_toEndOf="parent"
-                    app:layout_constraintStart_toStartOf="parent"
+                    android:layout_marginVertical="@dimen/_4sdp"
                     app:layout_constraintTop_toTopOf="parent" />
 
-                <TextView
-                    android:layout_width="wrap_content"
+                <include layout="@layout/skeleton_mod_item"
+                    android:id="@+id/skeleton_2"
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:text="@string/generic_loading"
-                    android:textSize="@dimen/_14ssp"
-                    app:layout_constraintEnd_toEndOf="parent"
-                    app:layout_constraintStart_toStartOf="parent"
-                    app:layout_constraintTop_toBottomOf="@+id/loading_progress" />
+                    android:layout_marginVertical="@dimen/_4sdp"
+                    app:layout_constraintTop_toBottomOf="@id/skeleton_1" />
+
+                <include layout="@layout/skeleton_mod_item"
+                    android:id="@+id/skeleton_3"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginVertical="@dimen/_4sdp"
+                    app:layout_constraintTop_toBottomOf="@id/skeleton_2" />
+
+                <include layout="@layout/skeleton_mod_item"
+                    android:id="@+id/skeleton_4"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginVertical="@dimen/_4sdp"
+                    app:layout_constraintTop_toBottomOf="@id/skeleton_3" />
+
+                <include layout="@layout/skeleton_mod_item"
+                    android:id="@+id/skeleton_5"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginVertical="@dimen/_4sdp"
+                    app:layout_constraintTop_toBottomOf="@id/skeleton_4" />
 
             </androidx.constraintlayout.widget.ConstraintLayout>
 
@@ -260,6 +282,7 @@
                 android:layout_marginHorizontal="@dimen/_8sdp"
                 android:layout_marginBottom="@dimen/_8sdp"
                 android:text="@string/generic_return"
+                android:visibility="gone"
                 app:layout_constraintBottom_toBottomOf="parent"
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintHorizontal_bias="0.0"

@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Zalith Launcher - White Blossom Edition</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Left Sidebar Menu -->
+        <aside class="sidebar">
+            <div class="logo-section">
+                <div class="logo">
+                    <svg width="40" height="40" viewBox="0 0 40 40" fill="none">
+                        <rect width="40" height="40" rx="8" fill="#000"/>
+                        <path d="M12 20L18 26L28 14" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                </div>
+                <h1 class="app-title">Zalith Launcher</h1>
+                <p class="app-subtitle">White Blossom Edition</p>
+            </div>
+
+            <nav class="menu">
+                <button class="menu-item active" data-page="home">
+                    <svg class="menu-icon" width="20" height="20" viewBox="0 0 20 20" fill="none">
+                        <path d="M3 10L10 3L17 10V17H13V13H7V17H3V10Z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                    <span>Home</span>
+                </button>
+
+                <button class="menu-item" data-page="versions">
+                    <svg class="menu-icon" width="20" height="20" viewBox="0 0 20 20" fill="none">
+                        <rect x="3" y="3" width="14" height="14" rx="2" stroke="currentColor" stroke-width="1.5"/>
+                        <path d="M7 10H13M10 7V13" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                    </svg>
+                    <span>Versions</span>
+                </button>
+
+                <button class="menu-item" data-page="mods">
+                    <svg class="menu-icon" width="20" height="20" viewBox="0 0 20 20" fill="none">
+                        <path d="M10 3V17M3 10H17" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                        <circle cx="10" cy="10" r="7" stroke="currentColor" stroke-width="1.5"/>
+                    </svg>
+                    <span>Mods</span>
+                </button>
+
+                <button class="menu-item" data-page="settings">
+                    <svg class="menu-icon" width="20" height="20" viewBox="0 0 20 20" fill="none">
+                        <circle cx="10" cy="10" r="3" stroke="currentColor" stroke-width="1.5"/>
+                        <path d="M10 2V4M10 16V18M18 10H16M4 10H2M15.5 4.5L14 6M6 14L4.5 15.5M15.5 15.5L14 14M6 6L4.5 4.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                    </svg>
+                    <span>Settings</span>
+                </button>
+
+                <button class="menu-item" data-page="account">
+                    <svg class="menu-icon" width="20" height="20" viewBox="0 0 20 20" fill="none">
+                        <circle cx="10" cy="7" r="4" stroke="currentColor" stroke-width="1.5"/>
+                        <path d="M3 17C3 14 6 12 10 12C14 12 17 14 17 17" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                    </svg>
+                    <span>Account</span>
+                </button>
+
+                <button class="menu-item" data-page="files">
+                    <svg class="menu-icon" width="20" height="20" viewBox="0 0 20 20" fill="none">
+                        <path d="M4 3H11L16 8V17H4V3Z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>
+                        <path d="M11 3V8H16" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>
+                    </svg>
+                    <span>Files</span>
+                </button>
+
+                <button class="menu-item" data-page="about">
+                    <svg class="menu-icon" width="20" height="20" viewBox="0 0 20 20" fill="none">
+                        <circle cx="10" cy="10" r="7" stroke="currentColor" stroke-width="1.5"/>
+                        <path d="M10 10V14M10 6V7" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                    </svg>
+                    <span>About</span>
+                </button>
+            </nav>
+
+            <div class="sidebar-footer">
+                <div class="version-info">v1.4.1.2</div>
+            </div>
+        </aside>
+
+        <!-- Main Content Area -->
+        <main class="main-content">
+            <!-- Home Page -->
+            <div class="page active" id="home-page">
+                <div class="page-header">
+                    <h2 class="page-title">Welcome Back</h2>
+                    <p class="page-subtitle">Ready to play Minecraft?</p>
+                </div>
+
+                <div class="content-grid">
+                    <!-- Quick Actions -->
+                    <div class="card quick-actions">
+                        <h3 class="card-title">Quick Actions</h3>
+                        <div class="action-buttons">
+                            <button class="action-btn primary">
+                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                                    <path d="M8 5V19L19 12L8 5Z" fill="currentColor"/>
+                                </svg>
+                                <span>Launch Game</span>
+                            </button>
+                            <button class="action-btn">
+                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                                    <path d="M12 5V19M5 12H19" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                                </svg>
+                                <span>Install Version</span>
+                            </button>
+                            <button class="action-btn">
+                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                                    <path d="M21 15V19C21 20.1 20.1 21 19 21H5C3.9 21 3 20.1 3 19V15M17 10L12 15M12 15L7 10M12 15V3" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                </svg>
+                                <span>Download Mods</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Current Version -->
+                    <div class="card version-card">
+                        <h3 class="card-title">Current Version</h3>
+                        <div class="version-display">
+                            <div class="version-icon">
+                                <img src="https://via.placeholder.com/64/000000/FFFFFF?text=MC" alt="Minecraft">
+                            </div>
+                            <div class="version-details">
+                                <h4>Minecraft 1.20.4</h4>
+                                <p>Vanilla • Java 17</p>
+                                <div class="version-stats">
+                                    <span class="stat">
+                                        <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                                            <circle cx="8" cy="8" r="6" stroke="currentColor" stroke-width="1.5"/>
+                                        </svg>
+                                        2.5 GB
+                                    </span>
+                                    <span class="stat">
+                                        <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                                            <path d="M8 2V8L12 10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                                        </svg>
+                                        Last played 2h ago
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Recent Activity -->
+                    <div class="card activity-card">
+                        <h3 class="card-title">Recent Activity</h3>
+                        <div class="activity-list">
+                            <div class="activity-item">
+                                <div class="activity-icon">📦</div>
+                                <div class="activity-content">
+                                    <p class="activity-title">Installed Fabric Loader</p>
+                                    <p class="activity-time">5 minutes ago</p>
+                                </div>
+                            </div>
+                            <div class="activity-item">
+                                <div class="activity-icon">🎮</div>
+                                <div class="activity-content">
+                                    <p class="activity-title">Played Minecraft 1.20.4</p>
+                                    <p class="activity-time">2 hours ago</p>
+                                </div>
+                            </div>
+                            <div class="activity-item">
+                                <div class="activity-icon">⚙️</div>
+                                <div class="activity-content">
+                                    <p class="activity-title">Updated settings</p>
+                                    <p class="activity-time">Yesterday</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- System Info -->
+                    <div class="card system-card">
+                        <h3 class="card-title">System Info</h3>
+                        <div class="system-info">
+                            <div class="info-row">
+                                <span class="info-label">Device</span>
+                                <span class="info-value">Android 13</span>
+                            </div>
+                            <div class="info-row">
+                                <span class="info-label">RAM</span>
+                                <span class="info-value">8 GB</span>
+                            </div>
+                            <div class="info-row">
+                                <span class="info-label">Storage</span>
+                                <span class="info-value">45 GB free</span>
+                            </div>
+                            <div class="info-row">
+                                <span class="info-label">Java</span>
+                                <span class="info-value">OpenJDK 17</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Versions Page -->
+            <div class="page" id="versions-page">
+                <div class="page-header">
+                    <h2 class="page-title">Minecraft Versions</h2>
+                    <button class="btn-primary">
+                        <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                            <path d="M10 4V16M4 10H16" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                        </svg>
+                        Install New Version
+                    </button>
+                </div>
+
+                <div class="search-bar">
+                    <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                        <circle cx="9" cy="9" r="6" stroke="currentColor" stroke-width="1.5"/>
+                        <path d="M13 13L17 17" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                    </svg>
+                    <input type="text" placeholder="Search versions...">
+                </div>
+
+                <div class="versions-list">
+                    <div class="version-item active">
+                        <div class="version-item-icon">1.20.4</div>
+                        <div class="version-item-content">
+                            <h4>Minecraft 1.20.4</h4>
+                            <p>Vanilla • 2.5 GB • Last played 2h ago</p>
+                        </div>
+                        <button class="btn-icon">
+                            <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                                <circle cx="10" cy="10" r="1.5" fill="currentColor"/>
+                                <circle cx="10" cy="5" r="1.5" fill="currentColor"/>
+                                <circle cx="10" cy="15" r="1.5" fill="currentColor"/>
+                            </svg>
+                        </button>
+                    </div>
+
+                    <div class="version-item">
+                        <div class="version-item-icon">1.19.4</div>
+                        <div class="version-item-content">
+                            <h4>Minecraft 1.19.4</h4>
+                            <p>Fabric • 3.2 GB • Last played 1 week ago</p>
+                        </div>
+                        <button class="btn-icon">
+                            <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                                <circle cx="10" cy="10" r="1.5" fill="currentColor"/>
+                                <circle cx="10" cy="5" r="1.5" fill="currentColor"/>
+                                <circle cx="10" cy="15" r="1.5" fill="currentColor"/>
+                            </svg>
+                        </button>
+                    </div>
+
+                    <div class="version-item">
+                        <div class="version-item-icon">1.18.2</div>
+                        <div class="version-item-content">
+                            <h4>Minecraft 1.18.2</h4>
+                            <p>Forge • 4.1 GB • Last played 2 weeks ago</p>
+                        </div>
+                        <button class="btn-icon">
+                            <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                                <circle cx="10" cy="10" r="1.5" fill="currentColor"/>
+                                <circle cx="10" cy="5" r="1.5" fill="currentColor"/>
+                                <circle cx="10" cy="15" r="1.5" fill="currentColor"/>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Other pages (placeholder) -->
+            <div class="page" id="mods-page">
+                <div class="page-header">
+                    <h2 class="page-title">Mods & Modpacks</h2>
+                </div>
+                <div class="placeholder">
+                    <svg width="64" height="64" viewBox="0 0 64 64" fill="none">
+                        <circle cx="32" cy="32" r="30" stroke="currentColor" stroke-width="2"/>
+                        <path d="M32 16V48M16 32H48" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                    </svg>
+                    <p>Mods management coming soon</p>
+                </div>
+            </div>
+
+            <div class="page" id="settings-page">
+                <div class="page-header">
+                    <h2 class="page-title">Settings</h2>
+                </div>
+                <div class="placeholder">
+                    <svg width="64" height="64" viewBox="0 0 64 64" fill="none">
+                        <circle cx="32" cy="32" r="12" stroke="currentColor" stroke-width="2"/>
+                        <path d="M32 8V16M32 48V56M56 32H48M16 32H8M46 18L40 24M24 40L18 46M46 46L40 40M24 24L18 18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                    </svg>
+                    <p>Settings panel</p>
+                </div>
+            </div>
+
+            <div class="page" id="account-page">
+                <div class="page-header">
+                    <h2 class="page-title">Account</h2>
+                </div>
+                <div class="placeholder">
+                    <svg width="64" height="64" viewBox="0 0 64 64" fill="none">
+                        <circle cx="32" cy="24" r="12" stroke="currentColor" stroke-width="2"/>
+                        <path d="M12 52C12 42 20 36 32 36C44 36 52 42 52 52" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                    </svg>
+                    <p>Account management</p>
+                </div>
+            </div>
+
+            <div class="page" id="files-page">
+                <div class="page-header">
+                    <h2 class="page-title">File Manager</h2>
+                </div>
+                <div class="placeholder">
+                    <svg width="64" height="64" viewBox="0 0 64 64" fill="none">
+                        <path d="M16 12H36L48 24V52H16V12Z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
+                        <path d="M36 12V24H48" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
+                    </svg>
+                    <p>File browser</p>
+                </div>
+            </div>
+
+            <div class="page" id="about-page">
+                <div class="page-header">
+                    <h2 class="page-title">About</h2>
+                </div>
+                <div class="about-content">
+                    <div class="about-logo">
+                        <svg width="80" height="80" viewBox="0 0 80 80" fill="none">
+                            <rect width="80" height="80" rx="16" fill="#000"/>
+                            <path d="M24 40L36 52L56 28" stroke="white" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                    </div>
+                    <h3>Zalith Launcher</h3>
+                    <p class="version-badge">White Blossom Edition v1.4.1.2</p>
+                    <p class="about-description">
+                        A modern Minecraft launcher for Android, redesigned with a clean white aesthetic.
+                        Based on PojavLauncher with enhanced UI/UX.
+                    </p>
+                    <div class="about-links">
+                        <a href="#" class="link-btn">GitHub</a>
+                        <a href="#" class="link-btn">Discord</a>
+                        <a href="#" class="link-btn">Documentation</a>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>

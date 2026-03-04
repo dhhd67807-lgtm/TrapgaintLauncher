@@ -41,6 +41,10 @@ public abstract class BaseActivity extends AppCompatActivity {
         checkStoragePermissions();
         //加载渲染器
         Renderers.INSTANCE.init(false);
+        // Set current renderer from settings
+        if (!Renderers.INSTANCE.isCurrentRendererValid()) {
+            Renderers.INSTANCE.setCurrentRenderer(this, AllSettings.getRenderer().getValue(), true);
+        }
         //加载插件
         PluginLoader.loadAllPlugins(this, false);
         //刷新游戏路径

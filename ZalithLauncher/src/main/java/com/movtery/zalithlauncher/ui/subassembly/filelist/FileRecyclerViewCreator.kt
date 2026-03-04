@@ -79,6 +79,14 @@ class FileRecyclerViewCreator(
         fileRecyclerAdapter.setOnMultiSelectListener(listener)
     }
 
+    fun setOnDeleteClickListener(listener: FileRecyclerAdapter.OnDeleteClickListener?) {
+        fileRecyclerAdapter.setOnDeleteClickListener(listener)
+    }
+
+    fun setShowDeleteButton(show: Boolean) {
+        fileRecyclerAdapter.setShowDeleteButton(show)
+    }
+
     fun isNoFile(): Boolean {
         return fileRecyclerAdapter.isNoFile
     }

@@ -27,7 +27,9 @@ import android.view.ViewTreeObserver;
 import android.view.Window;
 import android.view.WindowManager;
 import android.widget.CompoundButton;
+import android.widget.ImageView;
 import android.widget.SeekBar;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
@@ -233,23 +235,50 @@ public class MainActivity extends BaseActivity implements ControlButtonMenuListe
 
             if (AllSettings.getEnableLogOutput().getValue()) binding.mainLoggerView.setVisibilityWithAnim(true);
 
-            String mcInfo = "";
+            // Setup game launch tip with loader icon
+            View gameTipView = binding.gameTip.getRoot();
+            ImageView loaderIcon = gameTipView.findViewById(R.id.loader_icon);
+            TextView versionName = gameTipView.findViewById(R.id.version_name);
+            
+            // Determine loader type and set icon
             VersionInfo versionInfo = minecraftVersion.getVersionInfo();
-            if (versionInfo != null) {
-                mcInfo = versionInfo.getInfoString();
+            String loaderType = "VANILLA";
+            if (versionInfo != null && versionInfo.getLoaderInfo() != null && versionInfo.getLoaderInfo().length > 0) {
+                loaderType = versionInfo.getLoaderInfo()[0].getName().toUpperCase();
             }
-            String tipString = StringUtils.insertNewline(
-                    binding.gameTip.getText(),
-                    StringUtils.insertSpace(getString(R.string.game_tip_version), minecraftVersion.getVersionName())
-            );
-            if (!mcInfo.isEmpty()) {
-                tipString = StringUtils.insertNewline(tipString, StringUtils.insertSpace(getString(R.string.game_tip_mc_info), mcInfo));
+            
+            // Set loader icon based on type
+            switch (loaderType) {
+                case "FABRIC":
+                    loaderIcon.setImageResource(R.drawable.ic_fabric_loader);
+                    break;
+                case "FORGE":
+                case "NEOFORGE":
+                    loaderIcon.setImageResource(R.drawable.ic_forge);
+                    break;
+                default:
+                    loaderIcon.setImageResource(R.drawable.ic_vanilla);
+                    break;
             }
-            binding.gameTip.setText(tipString);
-            AnimUtils.setVisibilityAnim(binding.gameTip, 1000, true, 300, new AnimUtils.AnimationListener() {
+            
+            // Set version name
+            versionName.setText(minecraftVersion.getVersionName());
+            
+            // Hide controls and menu when showing launch tip
+            binding.mainControlLayout.setVisibility(View.GONE);
+            mGameMenuWrapper.setVisibility(false);
+            
+            AnimUtils.setVisibilityAnim(gameTipView, 1000, true, 300, new AnimUtils.AnimationListener() {
                 @Override public void onStart() {}
                 @Override public void onEnd() {
-                    AnimUtils.setVisibilityAnim(binding.gameTip, 15000, false, 300, null);
+                    AnimUtils.setVisibilityAnim(gameTipView, 15000, false, 300, new AnimUtils.AnimationListener() {
+                        @Override public void onStart() {}
+                        @Override public void onEnd() {
+                            // Show controls and menu after launch tip disappears
+                            binding.mainControlLayout.setVisibility(View.VISIBLE);
+                            mGameMenuWrapper.setVisibility(!binding.mainControlLayout.hasMenuButton());
+                        }
+                    });
                 }
             });
         } catch (Throwable e) {

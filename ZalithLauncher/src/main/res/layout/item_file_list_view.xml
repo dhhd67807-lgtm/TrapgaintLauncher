@@ -26,7 +26,7 @@
         android:layout_marginHorizontal="@dimen/_8sdp"
         android:orientation="vertical"
         app:layout_constraintBottom_toBottomOf="@+id/image"
-        app:layout_constraintEnd_toStartOf="@+id/check"
+        app:layout_constraintEnd_toStartOf="@+id/installed_check"
         app:layout_constraintStart_toEndOf="@+id/image"
         app:layout_constraintTop_toTopOf="@+id/image">
 
@@ -66,11 +66,39 @@
 
     </LinearLayout>
 
+    <!-- Checkmark icon for installed versions -->
+    <ImageView
+        android:id="@+id/installed_check"
+        android:layout_width="@dimen/_16sdp"
+        android:layout_height="@dimen/_16sdp"
+        android:layout_marginEnd="@dimen/_8sdp"
+        android:src="@drawable/ic_check"
+        android:tint="#4CAF50"
+        android:visibility="gone"
+        app:layout_constraintEnd_toStartOf="@+id/delete_button"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintBottom_toBottomOf="parent"/>
+
+    <!-- Delete button -->
+    <ImageButton
+        android:id="@+id/delete_button"
+        android:layout_width="@dimen/_28sdp"
+        android:layout_height="@dimen/_28sdp"
+        android:layout_marginEnd="@dimen/_8sdp"
+        android:background="?android:attr/selectableItemBackgroundBorderless"
+        android:scaleType="centerInside"
+        android:src="@drawable/ic_menu_delete_forever"
+        android:visibility="gone"
+        app:layout_constraintEnd_toStartOf="@+id/check"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintBottom_toBottomOf="parent"/>
+
     <CheckBox
         android:id="@+id/check"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginEnd="@dimen/_8sdp"
+        android:visibility="gone"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintBottom_toBottomOf="parent"/>

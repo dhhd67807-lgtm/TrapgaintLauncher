@@ -245,6 +245,9 @@ public final class JREUtils {
             envMap.put("LIBGL_NOERROR", "1");
             envMap.put("LIBGL_NOINTOVLHACK", "1");
             envMap.put("LIBGL_NORMALIZE", "1");
+            envMap.put("LIBGL_NOBGRA", "1"); // Disable BGRA for compatibility
+            envMap.put("LIBGL_NOTEXMAT", "1"); // Disable texture matrix for stability
+            envMap.put("LIBGL_NOPSA", "1"); // Disable persistent buffer mapping (fixes MC 1.21+)
         }
 
         envMap.putAll(currentRenderer.getRendererEnv().getValue());
@@ -363,6 +366,7 @@ public final class JREUtils {
     private static void launchJavaVM(
             final AppCompatActivity activity,
             String runtimeHome,
+            Runtime runtime,
             Version gameVersion,
             final List<String> JVMArgs,
             final String userArgsString
@@ -395,7 +399,131 @@ public final class JREUtils {
         userArgs.add("-Dorg.lwjgl.freetype.libname="+ DIR_NATIVE_LIB +"/libfreetype.so");
 
         // Some phones are not using the right number of cores, fix that
-        userArgs.add("-XX:ActiveProcessorCount=" + java.lang.Runtime.getRuntime().availableProcessors());
+        int availableProcessors = java.lang.Runtime.getRuntime().availableProcessors();
+        userArgs.add("-XX:ActiveProcessorCount=" + availableProcessors);
+
+        // Determine Java version from runtime
+        Runtime currentRuntime = MultiRTUtils.read(runtime.name);
+        boolean isJava17Plus = currentRuntime.javaVersion >= 17;
+        
+        // Get allocated RAM to determine if low-RAM optimizations are needed
+        int allocatedRAM = AllSettings.getRamAllocation().getValue().getValue();
+        boolean isLowRAM = allocatedRAM <= 2048; // 2GB or less
+
+        // Ultra-optimized performance for smooth gameplay (iOS-like smoothness)
+        userArgs.add("-XX:+UnlockExperimentalVMOptions");
+        userArgs.add("-XX:+DisableExplicitGC"); // Disable explicit GC calls
+        
+        // Low-RAM specific optimizations (2GB or less)
+        if (isLowRAM) {
+            userArgs.add("-XX:+UseCompressedOops"); // Compress object pointers
+            userArgs.add("-XX:+UseCompressedClassPointers"); // Compress class pointers
+            userArgs.add("-XX:CompressedClassSpaceSize=128M"); // Reduce class space
+            userArgs.add("-XX:InitialCodeCacheSize=64M"); // Start with smaller code cache
+            userArgs.add("-XX:ReservedCodeCacheSize=256M"); // Limit code cache growth
+            userArgs.add("-XX:MetaspaceSize=128M"); // Smaller metaspace
+            userArgs.add("-XX:MaxMetaspaceSize=256M"); // Limit metaspace
+        } else {
+            userArgs.add("-XX:ReservedCodeCacheSize=512M");
+        }
+        
+        if (isJava17Plus) {
+            // Java 17+ optimizations (G1GC) - iOS-like smoothness
+            userArgs.add("-XX:+UseG1GC");
+            
+            if (isLowRAM) {
+                // Aggressive low-RAM G1GC settings
+                userArgs.add("-XX:G1HeapRegionSize=4M"); // Smaller regions for low RAM
+                userArgs.add("-XX:G1NewSizePercent=10"); // Smaller young gen
+                userArgs.add("-XX:G1MaxNewSizePercent=30"); // Limit young gen growth
+                userArgs.add("-XX:G1ReservePercent=10"); // Less reserve
+                userArgs.add("-XX:InitiatingHeapOccupancyPercent=30"); // Earlier GC
+                userArgs.add("-XX:G1MixedGCCountTarget=4"); // Fewer mixed GC cycles
+                userArgs.add("-XX:G1HeapWastePercent=3"); // Less waste tolerance
+                userArgs.add("-XX:ParallelGCThreads=" + Math.min(4, Math.max(2, availableProcessors))); // Limit GC threads
+                userArgs.add("-XX:ConcGCThreads=" + Math.max(1, availableProcessors / 4)); // Concurrent threads
+            } else {
+                userArgs.add("-XX:G1HeapRegionSize=8M");
+                userArgs.add("-XX:ParallelGCThreads=" + Math.max(2, availableProcessors));
+            }
+            
+            userArgs.add("-XX:-UseGCOverheadLimit");
+            userArgs.add("-XX:MaxGCPauseMillis=37"); // Target 37ms for 30fps smoothness
+            userArgs.add("-XX:+UseStringDeduplication");
+            userArgs.add("-XX:SurvivorRatio=8");
+            userArgs.add("-XX:TargetSurvivorRatio=90");
+            userArgs.add("-XX:MaxTenuringThreshold=15");
+        } else {
+            // Java 8 optimizations (CMS GC) - iOS-like smoothness
+            userArgs.add("-XX:+UseConcMarkSweepGC");
+            userArgs.add("-XX:+UseParNewGC");
+            
+            if (isLowRAM) {
+                // Aggressive low-RAM CMS settings
+                userArgs.add("-XX:ParallelGCThreads=" + Math.min(4, Math.max(2, availableProcessors)));
+                userArgs.add("-XX:NewRatio=3"); // Smaller young generation
+                userArgs.add("-XX:CMSInitiatingOccupancyFraction=60"); // Earlier CMS
+                userArgs.add("-XX:+UseCMSInitiatingOccupancyOnly");
+                userArgs.add("-XX:CMSMaxAbortablePrecleanTime=1000"); // Limit preclean time
+            } else {
+                userArgs.add("-XX:ParallelGCThreads=" + Math.max(2, availableProcessors));
+            }
+            
+            userArgs.add("-XX:+CMSParallelRemarkEnabled");
+            userArgs.add("-XX:+UseAdaptiveGCBoundary");
+            userArgs.add("-XX:-UseGCOverheadLimit");
+            userArgs.add("-XX:+UseBiasedLocking");
+            userArgs.add("-XX:+UseFastAccessorMethods");
+            userArgs.add("-XX:MaxGCPauseMillis=37"); // Target 37ms for 30fps smoothness
+            userArgs.add("-XX:SurvivorRatio=8");
+            userArgs.add("-XX:TargetSurvivorRatio=90");
+            userArgs.add("-XX:MaxTenuringThreshold=15");
+            userArgs.add("-XX:+OptimizeStringConcat");
+            userArgs.add("-XX:+UseCodeCacheFlushing");
+        }
+        
+        // Common optimizations for all Java versions - iOS-like smoothness
+        userArgs.add("-XX:+ParallelRefProcEnabled"); // Parallel reference processing
+        userArgs.add("-XX:-UsePerfData"); // Disable performance data
+        userArgs.add("-XX:SoftRefLRUPolicyMSPerMB=2048"); // Aggressive soft reference cleanup
+        
+        // Thread and compilation optimizations
+        userArgs.add("-XX:+TieredCompilation"); // Enable tiered compilation
+        if (isLowRAM) {
+            userArgs.add("-XX:TieredStopAtLevel=1"); // Stop at C1 compiler for low RAM
+        }
+        userArgs.add("-XX:+UseInlineCaches"); // Inline caching
+        
+        // Memory and allocation optimizations
+        userArgs.add("-XX:+AlwaysPreTouch"); // Pre-touch memory pages
+        userArgs.add("-XX:+UseTLAB"); // Thread-local allocation buffers
+        userArgs.add("-XX:+ResizeTLAB"); // Resize TLABs dynamically
+        
+        // Rendering and graphics optimizations
+        userArgs.add("-Dsun.java2d.opengl=true"); // Enable OpenGL pipeline
+        
+        // Fix for Minecraft 1.21+ buffer mapping issues
+        // Force compatibility mode for buffer operations
+        userArgs.add("-Dminecraft.forceCompatibilityMode=true");
+        userArgs.add("-Dfml.earlyprogresswindow=false"); // Disable Forge progress window
+        userArgs.add("-Djava.awt.headless=true"); // Headless mode for better compatibility
+        userArgs.add("-Dsun.java2d.d3d=false"); // Disable D3D
+        userArgs.add("-Dsun.java2d.noddraw=true"); // Disable DirectDraw
+        
+        // Forge/Fabric compatibility
+        userArgs.add("-Dfml.ignorePatchDiscrepancies=true");
+        userArgs.add("-Dfml.ignoreInvalidMinecraftCertificates=true");
+        userArgs.add("-Dfml.readTimeout=180");
+        userArgs.add("-Dfml.queryResult=confirm");
+        
+        // Game directory
+        userArgs.add("-Dminecraft.applet.TargetDirectory=" + ProfilePathHome.getGameHome());
+        
+        // Low-RAM specific game optimizations
+        if (isLowRAM) {
+            userArgs.add("-Djava.awt.headless=true"); // Headless mode
+            userArgs.add("-Dlog4j2.formatMsgNoLookups=true"); // Disable log4j lookups
+        }
 
         userArgs.addAll(JVMArgs);
         activity.runOnUiThread(() -> Toast.makeText(activity, activity.getString(R.string.autoram_info_msg, AllSettings.getRamAllocation().getValue().getValue()), Toast.LENGTH_SHORT).show());
@@ -440,7 +568,7 @@ public final class JREUtils {
 
         initGraphicAndSoundEngine(gameVersion != null);
 
-        launchJavaVM(activity, runtimeHome, gameVersion, JVMArgs, userArgsString);
+        launchJavaVM(activity, runtimeHome, runtime, gameVersion, JVMArgs, userArgsString);
     }
 
     /**
