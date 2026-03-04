@@ -14,4 +14,6 @@ class GL4ESRenderer : RendererInterface {
     override fun getDlopenLibrary(): Lazy<List<String>> = lazy { emptyList() }
 
     override fun getRendererLibrary(): String = "libgl4es_114.so"
+    
+    override fun getMaxMCVersion(): String = "1.21.4"
 }

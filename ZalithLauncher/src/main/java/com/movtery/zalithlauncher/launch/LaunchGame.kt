@@ -160,6 +160,38 @@ class LaunchGame {
                 }
             }
 
+            // Check renderer compatibility for the Minecraft version
+            val mcVersion = version.id ?: ""
+            val currentRenderer = Renderers.getCurrentRenderer()
+            
+            if (!currentRenderer.supportsVersion(mcVersion)) {
+                Logger.appendToLog("WARNING: Current renderer '${currentRenderer.getRendererName()}' does not support MC $mcVersion")
+                
+                // Try to find a compatible renderer
+                val compatibleRenderer = Renderers.getCompatibleRenderers().firstOrNull { it.supportsVersion(mcVersion) }
+                
+                if (compatibleRenderer != null) {
+                    Logger.appendToLog("Auto-switching to compatible renderer: ${compatibleRenderer.getRendererName()}")
+                    Renderers.setCurrentRenderer(activity, compatibleRenderer.getRendererId())
+                    activity.runOnUiThread {
+                        Toast.makeText(
+                            activity,
+                            "Switched to ${compatibleRenderer.getRendererName()} renderer for MC $mcVersion",
+                            Toast.LENGTH_LONG
+                        ).show()
+                    }
+                } else {
+                    Logger.appendToLog("ERROR: No compatible renderer found for MC $mcVersion")
+                    activity.runOnUiThread {
+                        Toast.makeText(
+                            activity,
+                            "Warning: No compatible renderer found for MC $mcVersion. Game may crash.",
+                            Toast.LENGTH_LONG
+                        ).show()
+                    }
+                }
+            }
+            
             val javaRuntime = getRuntime(activity, minecraftVersion, targetJavaVersion)
             
             Logger.appendToLog("Java Version Detection: MC ${version.id} requires Java $targetJavaVersion")
@@ -176,27 +208,6 @@ class LaunchGame {
                 throw RuntimeException(errorMsg)
             }
             Logger.appendToLog("Runtime verification passed: Java ${runtimeCheck.javaVersion} (${runtimeCheck.versionString})")
-            
-            // Check renderer compatibility for Minecraft 1.21.8+
-            val currentRenderer = Renderers.getCurrentRenderer()
-            if (targetJavaVersion >= 21) {
-                val parts = version.id?.split(".") ?: emptyList()
-                if (parts.size >= 3) {
-                    val minor = parts[1].toIntOrNull() ?: 0
-                    val patch = parts[2].substringBefore("-").toIntOrNull() ?: 0
-                    if (minor == 21 && patch >= 8 && currentRenderer.getRendererId() == "opengles2") {
-                        Logger.appendToLog("WARNING: Minecraft ${version.id} may not work properly with GL4ES renderer")
-                        Logger.appendToLog("RECOMMENDATION: Switch to Vulkan/Zink renderer for better compatibility")
-                        activity.runOnUiThread {
-                            Toast.makeText(
-                                activity,
-                                "Warning: MC ${version.id} may crash with GL4ES. Try Vulkan/Zink renderer instead.",
-                                Toast.LENGTH_LONG
-                            ).show()
-                        }
-                    }
-                }
-            }
 
             printLauncherInfo(
                 minecraftVersion,

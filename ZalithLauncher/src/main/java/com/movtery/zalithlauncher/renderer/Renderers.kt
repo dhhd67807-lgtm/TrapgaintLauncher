@@ -66,6 +66,13 @@ object Renderers {
         compatibleRenderers = rendererPair
         rendererPair
     }
+    
+    /**
+     * 获取兼容当前设备的所有渲染器列表（简化版）
+     */
+    fun getCompatibleRenderers(): List<RendererInterface> {
+        return compatibleRenderers?.second ?: renderers
+    }
 
     /**
      * 加入一些渲染器
