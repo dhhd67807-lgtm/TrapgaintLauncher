@@ -2,9 +2,11 @@ package com.movtery.zalithlauncher.renderer
 
 import android.content.Context
 import com.movtery.zalithlauncher.feature.log.Logging
+import com.movtery.zalithlauncher.renderer.renderers.AngleRenderer
 import com.movtery.zalithlauncher.renderer.renderers.FreedrenoRenderer
 import com.movtery.zalithlauncher.renderer.renderers.GL4ESRenderer
 import com.movtery.zalithlauncher.renderer.renderers.MobileGluesRenderer
+import com.movtery.zalithlauncher.renderer.renderers.NGGL4ESRenderer
 import com.movtery.zalithlauncher.renderer.renderers.PanfrostRenderer
 import com.movtery.zalithlauncher.renderer.renderers.VirGLRenderer
 import com.movtery.zalithlauncher.renderer.renderers.VulkanZinkRenderer
@@ -31,11 +33,13 @@ object Renderers {
         }
 
         addRenderers(
-            VirGLRenderer(),        // VirGL uses OSMesa_2300d for best MC 1.21.5+ support
-            MobileGluesRenderer(),  // Limited to MC 1.21.4 (crashes on 1.21.5+)
+            NGGL4ESRenderer(),      // Krypton Wrapper - works with ALL MC versions (FCL's solution)
+            AngleRenderer(),        // ANGLE for MC 1.21.5+
+            VirGLRenderer(),        // VirGL (crashes on 1.21.5+)
+            MobileGluesRenderer(),  // Limited to MC 1.21.4
             GL4ESRenderer(),        // Limited to 1.21.4
-            VulkanZinkRenderer(),   // Limited to 1.21.4 (OSMesa_8 issue)
-            FreedrenoRenderer(),    // Limited to 1.21.4 (OSMesa_8 issue)
+            VulkanZinkRenderer(),   // Limited to 1.21.4
+            FreedrenoRenderer(),    // Limited to 1.21.4
             PanfrostRenderer()
         )
     }
