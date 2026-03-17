@@ -17,8 +17,14 @@ public class LauncherVersion {
     private final FileSize fileSize;
     @SerializedName("pre_release")
     private final boolean isPreRelease;
+    @SerializedName("download_url")
+    private final String downloadUrl;
 
     public LauncherVersion(int versionCode, String versionName, WhatsNew title, WhatsNew description, String publishedAt, FileSize fileSize, boolean isPreRelease) {
+        this(versionCode, versionName, title, description, publishedAt, fileSize, isPreRelease, null);
+    }
+
+    public LauncherVersion(int versionCode, String versionName, WhatsNew title, WhatsNew description, String publishedAt, FileSize fileSize, boolean isPreRelease, String downloadUrl) {
         this.versionCode = versionCode;
         this.versionName = versionName;
         this.title = title;
@@ -26,6 +32,7 @@ public class LauncherVersion {
         this.publishedAt = publishedAt;
         this.fileSize = fileSize;
         this.isPreRelease = isPreRelease;
+        this.downloadUrl = downloadUrl;
     }
 
     public int getVersionCode() {
@@ -56,6 +63,10 @@ public class LauncherVersion {
         return isPreRelease;
     }
 
+    public String getDownloadUrl() {
+        return downloadUrl;
+    }
+
     @NonNull
     @Override
     public String toString() {
@@ -66,6 +77,7 @@ public class LauncherVersion {
                 ", description=" + description +
                 ", publishedAt='" + publishedAt + '\'' +
                 ", fileSize=" + fileSize +
+                ", downloadUrl='" + downloadUrl + '\'' +
                 '}';
     }
 

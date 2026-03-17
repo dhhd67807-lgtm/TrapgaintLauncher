@@ -4,6 +4,7 @@ import android.content.Context
 import android.content.Intent
 import android.widget.Toast
 import androidx.core.content.FileProvider
+import com.movtery.zalithlauncher.InfoDistributor
 import com.movtery.zalithlauncher.R
 import com.movtery.zalithlauncher.feature.log.Logging
 import com.movtery.zalithlauncher.feature.update.LauncherVersion.FileSize
@@ -24,12 +25,16 @@ import net.kdt.pojavlaunch.Tools
 import okhttp3.Call
 import okhttp3.Response
 import org.apache.commons.io.FileUtils
+import org.json.JSONArray
 import org.json.JSONObject
 import java.io.File
 import java.io.IOException
 
 class UpdateUtils {
     companion object {
+        private const val RELEASE_SOURCE = "GitHub Release"
+        private val ARCH_SUFFIXES = listOf("armeabi-v7a", "arm64-v8a", "x86", "x86_64")
+
         @JvmField
         val sApkFile: File = File(PathManager.DIR_APP_CACHE, "cache.apk")
         private var LAST_UPDATE_CHECK_TIME: Long = 0
@@ -96,11 +101,10 @@ class UpdateUtils {
                         Logging.e("UpdateLauncher", "Unexpected code " + response.code)
                     } else {
                         try {
-                            val jsonObject = JSONObject(response.body!!.string())
-                            val rawBase64 = jsonObject.getString("content")
-                            val rawJson = StringUtils.decodeBase64(rawBase64)
-
-                            val launcherVersion = Tools.GLOBAL_GSON.fromJson(rawJson, LauncherVersion::class.java)
+                            val launcherVersion = resolveLauncherVersion(response.body!!.string()) ?: run {
+                                Logging.e("Check Update", "Unable to resolve release metadata from GitHub")
+                                return
+                            }
 
                             val versionName = launcherVersion.versionName
                             if (ignore && versionName == ignoreUpdate.getValue()) return  //忽略此版本
@@ -112,7 +116,16 @@ class UpdateUtils {
                             }
                             if (checkPreRelease() && ZHTools.getVersionCode() < versionCode) {
                                 runInUIThread {
-                                    UpdateDialog(context, launcherVersion).show()
+                                    if (ignore) {
+                                        Toast.makeText(
+                                            context,
+                                            context.getString(R.string.update_downloading_tip, RELEASE_SOURCE),
+                                            Toast.LENGTH_SHORT
+                                        ).show()
+                                        UpdateLauncher(context, launcherVersion).start()
+                                    } else {
+                                        UpdateDialog(context, launcherVersion).show()
+                                    }
                                 }
                             } else if (!ignore) {
                                 runInUIThread {
@@ -131,7 +144,104 @@ class UpdateUtils {
                         }
                     }
                 }
-            }, "${UrlManager.URL_GITHUB_HOME}launcher_version.json", null).enqueue()
+            }, UrlManager.URL_GITHUB_RELEASE_LATEST, null).enqueue()
+        }
+
+        private fun resolveLauncherVersion(rawResponse: String): LauncherVersion? {
+            val jsonObject = JSONObject(rawResponse)
+
+            if (jsonObject.has("content")) {
+                val rawBase64 = jsonObject.getString("content")
+                val rawJson = StringUtils.decodeBase64(rawBase64)
+                return Tools.GLOBAL_GSON.fromJson(rawJson, LauncherVersion::class.java)
+            }
+
+            if (jsonObject.has("tag_name")) {
+                return parseGitHubRelease(jsonObject)
+            }
+            return null
+        }
+
+        private fun parseGitHubRelease(releaseJson: JSONObject): LauncherVersion? {
+            val assets = releaseJson.optJSONArray("assets") ?: return null
+            val selectedAsset = selectBestAsset(assets) ?: return null
+
+            val downloadUrl = selectedAsset.optString("browser_download_url")
+            if (downloadUrl.isBlank()) return null
+
+            val tagName = releaseJson.optString("tag_name")
+            val releaseName = releaseJson.optString("name")
+            val assetName = selectedAsset.optString("name")
+
+            val versionCode = parseVersionCode(tagName, releaseName) ?: return null
+            val versionName = parseVersionName(tagName, releaseName, assetName)
+
+            val titleText = releaseName.ifBlank { "Update $versionName" }
+            val descriptionText = releaseJson.optString("body").ifBlank { titleText }
+            val assetSize = selectedAsset.optLong("size")
+
+            return LauncherVersion(
+                versionCode,
+                versionName,
+                LauncherVersion.WhatsNew(titleText, titleText, titleText),
+                LauncherVersion.WhatsNew(descriptionText, descriptionText, descriptionText),
+                releaseJson.optString("published_at"),
+                FileSize(assetSize, assetSize, assetSize, assetSize, assetSize),
+                releaseJson.optBoolean("prerelease", false),
+                downloadUrl
+            )
+        }
+
+        private fun selectBestAsset(assets: JSONArray): JSONObject? {
+            val archModel = getArchModel()?.lowercase()
+            var firstApk: JSONObject? = null
+            var universalApk: JSONObject? = null
+
+            for (i in 0 until assets.length()) {
+                val asset = assets.optJSONObject(i) ?: continue
+                val name = asset.optString("name").lowercase()
+                if (!name.endsWith(".apk")) continue
+
+                if (firstApk == null) {
+                    firstApk = asset
+                }
+
+                if (archModel != null && name.endsWith("-$archModel.apk")) {
+                    return asset
+                }
+
+                if (universalApk == null && ARCH_SUFFIXES.none { name.endsWith("-$it.apk") }) {
+                    universalApk = asset
+                }
+            }
+            return universalApk ?: firstApk
+        }
+
+        private fun parseVersionCode(tagName: String, releaseName: String): Int? {
+            fun parse(source: String): Int? {
+                val cleaned = source.trim()
+                    .removePrefix("v")
+                    .removePrefix("V")
+                return cleaned.toIntOrNull()
+                    ?: cleaned.filter { it.isDigit() }.toIntOrNull()
+            }
+            return parse(tagName) ?: parse(releaseName)
+        }
+
+        private fun parseVersionName(tagName: String, releaseName: String, assetName: String): String {
+            if (assetName.isNotBlank()) {
+                val base = assetName.removeSuffix(".apk")
+                val strippedArch = ARCH_SUFFIXES
+                    .firstOrNull { base.endsWith("-$it") }
+                    ?.let { base.removeSuffix("-$it") } ?: base
+                val extracted = strippedArch.removePrefix("${InfoDistributor.LAUNCHER_NAME}-")
+                if (extracted.isNotBlank() && extracted != strippedArch) return extracted
+            }
+
+            if (releaseName.isNotBlank()) {
+                return releaseName
+            }
+            return tagName.removePrefix("v").removePrefix("V")
         }
 
         @JvmStatic
@@ -162,9 +272,11 @@ class UpdateUtils {
 
         @JvmStatic
         fun getDownloadUrl(launcherVersion: LauncherVersion): String {
+            launcherVersion.downloadUrl?.takeIf { it.isNotBlank() }?.let { return it }
+
             val archModel = getArchModel()
-            return "https://github.com/ZalithLauncher/ZalithLauncher/releases/download/" +
-                    "${launcherVersion.versionCode}/ZalithLauncher-${launcherVersion.versionName}" +
+            return "${UrlManager.URL_HOME}/releases/download/" +
+                    "${launcherVersion.versionCode}/${InfoDistributor.LAUNCHER_NAME}-${launcherVersion.versionName}" +
                     "${(if (archModel != null) String.format("-%s", archModel) else "")}.apk"
         }
 

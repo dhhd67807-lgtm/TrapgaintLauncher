@@ -14,14 +14,17 @@ import java.util.concurrent.TimeUnit
 class UrlManager {
     companion object {
         private const val URL_USER_AGENT: String = "${InfoDistributor.LAUNCHER_NAME}/${BuildConfig.VERSION_NAME}"
+        const val GITHUB_OWNER: String = "dhhd67807-lgtm"
+        const val GITHUB_REPO: String = "TrapgaintLauncher"
         @JvmField
         val TIME_OUT = Pair(8000, TimeUnit.MILLISECONDS)
-        const val URL_GITHUB_HOME: String = "https://api.github.com/repos/ZalithLauncher/Zalith-Info/contents/"
+        const val URL_GITHUB_HOME: String = "https://api.github.com/repos/$GITHUB_OWNER/$GITHUB_REPO/contents/"
+        const val URL_GITHUB_RELEASE_LATEST: String = "https://api.github.com/repos/$GITHUB_OWNER/$GITHUB_REPO/releases/latest"
         const val URL_MCMOD: String = "https://www.mcmod.cn/"
         const val URL_MINECRAFT: String = "https://www.minecraft.net/"
         const val URL_MINECRAFT_VERSION_REPOS: String = "https://piston-meta.mojang.com/mc/game/version_manifest_v2.json"
         const val URL_SUPPORT: String = "https://afdian.com/a/MovTery"
-        const val URL_HOME: String = "https://github.com/ZalithLauncher/ZalithLauncher"
+        const val URL_HOME: String = "https://github.com/$GITHUB_OWNER/$GITHUB_REPO"
         const val URL_FCL_RENDERER_PLUGIN: String = "https://github.com/ShirosakiMio/FCLRendererPlugin/releases/tag/Renderer"
         const val URL_FCL_DRIVER_PLUGIN: String = "https://github.com/FCL-Team/FCLDriverPlugin/releases/tag/Turnip"
 
