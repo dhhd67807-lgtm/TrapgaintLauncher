@@ -91,13 +91,22 @@ class UpdateUtils {
 
             CallUtils(object : CallbackListener {
                 override fun onFailure(call: Call?) {
-                    showFailToast(context, context.getString(R.string.update_fail))
+                    if (!ignore) {
+                        showFailToast(context, context.getString(R.string.update_fail))
+                    }
                 }
 
                 @Throws(IOException::class)
                 override fun onResponse(call: Call?, response: Response?) {
                     if (!response!!.isSuccessful) {
-                        showFailToast(context, context.getString(R.string.update_fail_code, response.code))
+                        if (!ignore) {
+                            val messageRes = if (response.code == 404) {
+                                StringUtils.insertSpace(context.getString(R.string.update_without), ZHTools.getVersionName())
+                            } else {
+                                context.getString(R.string.update_fail_code, response.code)
+                            }
+                            showFailToast(context, messageRes)
+                        }
                         Logging.e("UpdateLauncher", "Unexpected code " + response.code)
                     } else {
                         try {
