@@ -10,7 +10,7 @@ permissions:
 
 jobs:
   BuildRelease:
-    if: !startsWith(github.ref, 'refs/pull/') && github.ref_name == 'main'
+    if: ${{ !startsWith(github.ref, 'refs/pull/') && github.ref_name == 'main' }}
     runs-on: ubuntu-22.04
     strategy:
       matrix:
@@ -65,7 +65,7 @@ jobs:
           path: ZalithLauncher/build/outputs/apk/release/*
 
   PublishRelease:
-    if: !startsWith(github.ref, 'refs/pull/') && github.ref_name == 'main'
+    if: ${{ !startsWith(github.ref, 'refs/pull/') && github.ref_name == 'main' }}
     needs: BuildRelease
     runs-on: ubuntu-22.04
     steps:
@@ -110,7 +110,7 @@ jobs:
             release-artifacts/**/*.apk
 
   BuildDebug:
-    if: startsWith(github.ref, 'refs/pull/') || github.ref_name != 'main'
+    if: ${{ startsWith(github.ref, 'refs/pull/') || github.ref_name != 'main' }}
     runs-on: ubuntu-22.04
     strategy:
       matrix:
