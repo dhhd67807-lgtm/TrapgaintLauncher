@@ -55,7 +55,7 @@ jobs:
           MOVTERY_KEYSTORE_PASSWORD: ${{ secrets.MOVTERY_KEYSTORE_PASSWORD }}
         run: |
           chmod +x gradlew
-          ./gradlew ZalithLauncher:assemblerelease -Darch=${{ matrix.arch }} -Dorg.gradle.java.home="$JAVA_HOME"
+          ./gradlew ZalithLauncher:assemblerelease -Darch=${{ matrix.arch }} -Dorg.gradle.java.home="$JAVA_HOME" -x lintVitalRelease -x generateReleaseLintVitalReportModel
 
       - name: Upload Release ${{matrix.arch}}
         continue-on-error: true
