@@ -26,7 +26,9 @@ import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import kotlin.Pair;
 
@@ -36,7 +38,9 @@ public class VersionListView extends LinearLayout {
     private FileRecyclerViewCreator fileRecyclerViewCreator;
     private VersionSelectedListener versionSelectedListener;
     private int loaderIconRes = R.drawable.ic_minecraft; // Default to vanilla
+    private String loaderType = "VANILLA"; // Default installed-check context
     private String versionFilter = null; // Filter for specific version (e.g., "1.21")
+    private Set<String> allowedVersionIds = null; // Optional whitelist for exact versions
     private android.widget.TextView emptyStateTextView;
 
     public VersionListView(Context context) {
@@ -93,6 +97,7 @@ public class VersionListView extends LinearLayout {
                 null,
                 showVersions(VersionType.RELEASE)
         );
+        fileRecyclerViewCreator.fileRecyclerAdapter.setVersionLoaderType(loaderType);
 
         addView(mainListView, layParam);
         addView(emptyStateTextView, layParam);
@@ -105,6 +110,10 @@ public class VersionListView extends LinearLayout {
             
             // Apply version filter if set (e.g., only show 1.21.x versions)
             if (versionFilter != null && !version.id.startsWith(versionFilter)) {
+                continue;
+            }
+            // Apply exact version whitelist when present (used by custom loaders)
+            if (allowedVersionIds != null && !allowedVersionIds.contains(version.id)) {
                 continue;
             }
             
@@ -133,10 +142,29 @@ public class VersionListView extends LinearLayout {
             setVersionType(VersionType.RELEASE);
         }
     }
+
+    public void setLoaderType(String loaderType) {
+        this.loaderType = loaderType == null ? "VANILLA" : loaderType;
+        if (fileRecyclerViewCreator != null) {
+            fileRecyclerViewCreator.fileRecyclerAdapter.setVersionLoaderType(this.loaderType);
+            setVersionType(VersionType.RELEASE);
+        }
+    }
     
     public void setVersionFilter(String versionPrefix) {
         this.versionFilter = versionPrefix;
         // Refresh the current view with the filter
+        if (fileRecyclerViewCreator != null) {
+            setVersionType(VersionType.RELEASE);
+        }
+    }
+
+    public void setAllowedVersionIds(@Nullable List<String> versionIds) {
+        if (versionIds == null || versionIds.isEmpty()) {
+            this.allowedVersionIds = null;
+        } else {
+            this.allowedVersionIds = new HashSet<>(versionIds);
+        }
         if (fileRecyclerViewCreator != null) {
             setVersionType(VersionType.RELEASE);
         }
@@ -177,13 +205,19 @@ public class VersionListView extends LinearLayout {
                 if (versionFilter != null) {
                     message = "No " + versionFilter + " versions available";
                 }
+                if (allowedVersionIds != null && !allowedVersionIds.isEmpty()) {
+                    message = "No supported versions available";
+                }
                 emptyStateTextView.setText(message);
             } else {
                 emptyStateTextView.setVisibility(GONE);
             }
         }
         
-        TaskExecutors.runInUIThread(() -> fileRecyclerViewCreator.loadData(itemBeans));
+        if (fileRecyclerViewCreator != null) {
+            fileRecyclerViewCreator.fileRecyclerAdapter.setVersionLoaderType(loaderType);
+            TaskExecutors.runInUIThread(() -> fileRecyclerViewCreator.loadData(itemBeans));
+        }
         return itemBeans;
     }
 }

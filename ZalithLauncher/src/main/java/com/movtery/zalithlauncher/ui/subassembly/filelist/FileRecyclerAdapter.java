@@ -14,10 +14,14 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.bumptech.glide.Glide;
 import com.bumptech.glide.request.target.DrawableImageViewTarget;
 import com.movtery.zalithlauncher.R;
+import com.movtery.zalithlauncher.feature.version.Version;
+import com.movtery.zalithlauncher.feature.version.VersionInfo;
+import com.movtery.zalithlauncher.feature.version.VersionsManager;
 import com.movtery.zalithlauncher.databinding.ItemFileListViewBinding;
 import com.movtery.zalithlauncher.utils.file.FileTools;
 import com.movtery.zalithlauncher.utils.image.ImageUtils;
 import com.movtery.zalithlauncher.utils.stringutils.StringUtils;
+import net.kdt.pojavlaunch.Tools;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -28,6 +32,7 @@ import java.util.TimeZone;
 public class FileRecyclerAdapter extends RecyclerView.Adapter<FileRecyclerAdapter.InnerHolder> {
     private final List<FileItemBean> mData = new ArrayList<>();
     private final List<FileItemBean> selectedFiles = new ArrayList<>();
+    private String versionLoaderType = "VANILLA";
     private boolean isMultiSelectMode = false;
     private boolean showDeleteButton = false;
     private OnItemClickListener mOnItemClickListener;
@@ -122,6 +127,10 @@ public class FileRecyclerAdapter extends RecyclerView.Adapter<FileRecyclerAdapte
 
     public void setShowDeleteButton(boolean show) {
         this.showDeleteButton = show;
+    }
+
+    public void setVersionLoaderType(String loaderType) {
+        this.versionLoaderType = loaderType == null ? "VANILLA" : loaderType;
     }
 
     public interface OnItemClickListener {
@@ -225,9 +234,7 @@ public class FileRecyclerAdapter extends RecyclerView.Adapter<FileRecyclerAdapte
             
             // Check if this version is installed (for version lists only)
             if (file == null && fileItemBean.name != null) {
-                // This is a version item (not a file), check if it's installed
-                File versionDir = new File(com.movtery.zalithlauncher.feature.customprofilepath.ProfilePathHome.getVersionsHome(), fileItemBean.name);
-                boolean isInstalled = versionDir.exists() && versionDir.isDirectory();
+                boolean isInstalled = isVersionInstalledForLoader(fileItemBean.name);
                 binding.installedCheck.setVisibility(isInstalled ? View.VISIBLE : View.GONE);
             } else {
                 binding.installedCheck.setVisibility(View.GONE);
@@ -241,6 +248,72 @@ public class FileRecyclerAdapter extends RecyclerView.Adapter<FileRecyclerAdapte
             } else {
                 binding.image.setImageDrawable(fileItemBean.image);
             }
+        }
+
+        private boolean isVersionInstalledForLoader(String versionId) {
+            String targetLoaderType = normalizeLoaderType(versionLoaderType);
+            for (Version installedVersion : VersionsManager.INSTANCE.getVersions()) {
+                VersionInfo versionInfo = installedVersion.getVersionInfo();
+                String mcVersion = versionInfo != null ? versionInfo.getMinecraftVersion() : installedVersion.getVersionName();
+                if (mcVersion == null || !mcVersion.startsWith(versionId)) {
+                    continue;
+                }
+                if (detectVersionLoaderType(installedVersion).equals(targetLoaderType)) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        private String detectVersionLoaderType(Version version) {
+            String versionNameLower = version.getVersionName() == null ? "" : version.getVersionName().toLowerCase(Locale.ROOT);
+            if (versionNameLower.contains("dragon")) {
+                return "CUSTOM";
+            }
+
+            VersionInfo versionInfo = version.getVersionInfo();
+            if (versionInfo != null && versionInfo.getLoaderInfo() != null && versionInfo.getLoaderInfo().length > 0) {
+                return normalizeLoaderType(versionInfo.getLoaderInfo()[0].getName());
+            }
+
+            String versionNameType = normalizeLoaderType(version.getVersionName());
+            if (!"VANILLA".equals(versionNameType)) {
+                return versionNameType;
+            }
+
+            File versionJson = new File(version.getVersionPath(), version.getVersionName() + ".json");
+            if (!versionJson.exists() || !versionJson.isFile()) {
+                return "VANILLA";
+            }
+
+            try {
+                String jsonContent = Tools.read(versionJson).toUpperCase(Locale.ROOT);
+                if (jsonContent.contains("FABRIC") || jsonContent.contains("QUILT")) {
+                    return "FABRIC";
+                }
+                if (jsonContent.contains("FORGE") || jsonContent.contains("NEOFORGE")) {
+                    return "FORGE";
+                }
+            } catch (Exception ignored) {
+                // If JSON parsing fails, fallback to vanilla for badge routing.
+            }
+            return "VANILLA";
+        }
+
+        private String normalizeLoaderType(String loaderType) {
+            if (loaderType == null) return "VANILLA";
+
+            String normalized = loaderType.trim().toUpperCase(Locale.ROOT);
+            if ("CUSTOM".equals(normalized) || normalized.contains("DRAGON")) {
+                return "CUSTOM";
+            }
+            if (normalized.contains("FABRIC") || normalized.contains("QUILT")) {
+                return "FABRIC";
+            }
+            if (normalized.contains("FORGE") || normalized.contains("NEOFORGE")) {
+                return "FORGE";
+            }
+            return "VANILLA";
         }
     }
 }

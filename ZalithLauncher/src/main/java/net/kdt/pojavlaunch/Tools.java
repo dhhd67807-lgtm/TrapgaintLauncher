@@ -49,6 +49,7 @@ import net.kdt.pojavlaunch.lifecycle.ContextExecutorTask;
 import net.kdt.pojavlaunch.memory.MemoryHoleFinder;
 import net.kdt.pojavlaunch.memory.SelfMapsParser;
 import net.kdt.pojavlaunch.multirt.MultiRTUtils;
+import net.kdt.pojavlaunch.utils.BrandingSanitizer;
 import net.kdt.pojavlaunch.utils.FileUtils;
 import net.kdt.pojavlaunch.value.DependentLibrary;
 import net.kdt.pojavlaunch.value.MinecraftLibraryArtifact;
@@ -70,7 +71,10 @@ import java.lang.reflect.Field;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Set;
 
 @SuppressWarnings("IOStreamConstructor")
 public final class Tools {
@@ -174,27 +178,70 @@ public final class Tools {
     }
 
     public static String generateLaunchClassPath(JMinecraftVersionList.Version info, Version minecraftVersion) {
-        StringBuilder finalClasspath = new StringBuilder(); //versnDir + "/" + version + "/" + version + ".jar:";
-
+        StringBuilder finalClasspath = new StringBuilder();
         String[] classpath = generateLibClasspath(info);
+        List<String> clientClasspaths = getClientClasspaths(minecraftVersion);
+        if (clientClasspaths.isEmpty()) {
+            clientClasspaths.add(getClientClasspath(minecraftVersion));
+        }
 
-        String clientClasspath = getClientClasspath(minecraftVersion);
+        LinkedHashSet<String> appendedClasspaths = new LinkedHashSet<>();
 
         if (isClientFirst) {
-            finalClasspath.append(clientClasspath);
-        }
-        for (String jarFile : classpath) {
-            if (!FileUtils.exists(jarFile)) {
-                Logging.d(InfoDistributor.LAUNCHER_NAME, "Ignored non-exists file: " + jarFile);
-                continue;
+            for (String clientClasspath : clientClasspaths) {
+                appendExistingClasspath(finalClasspath, appendedClasspaths, clientClasspath);
             }
-            finalClasspath.append((isClientFirst ? ":" : "")).append(jarFile).append(!isClientFirst ? ":" : "");
         }
+
+        for (String jarFile : classpath) {
+            appendExistingClasspath(finalClasspath, appendedClasspaths, jarFile);
+        }
+
         if (!isClientFirst) {
-            finalClasspath.append(clientClasspath);
+            for (String clientClasspath : clientClasspaths) {
+                appendExistingClasspath(finalClasspath, appendedClasspaths, clientClasspath);
+            }
         }
 
         return finalClasspath.toString();
+    }
+
+    private static void appendExistingClasspath(StringBuilder classpathBuilder, Set<String> appendedClasspaths, String path) {
+        if (path == null || path.isEmpty()) return;
+        if (appendedClasspaths.contains(path)) return;
+        if (!FileUtils.exists(path)) {
+            Logging.d(InfoDistributor.LAUNCHER_NAME, "Ignored non-exists file: " + path);
+            return;
+        }
+        if (classpathBuilder.length() > 0) classpathBuilder.append(":");
+        classpathBuilder.append(path);
+        appendedClasspaths.add(path);
+    }
+
+    private static List<String> getClientClasspaths(Version version) {
+        List<String> classpaths = new ArrayList<>();
+        Set<String> visitedVersionNames = new HashSet<>();
+
+        String versionName = version.getVersionName();
+        final File versionsFolder = new File(version.getVersionsFolder());
+        while (versionName != null && !versionName.isEmpty() && visitedVersionNames.add(versionName)) {
+            File versionDir = new File(versionsFolder, versionName);
+            classpaths.add(new File(versionDir, versionName + ".jar").getAbsolutePath());
+
+            File versionJson = new File(versionDir, versionName + ".json");
+            if (!versionJson.exists()) break;
+
+            try {
+                JMinecraftVersionList.Version versionInfo = Tools.GLOBAL_GSON.fromJson(read(versionJson), JMinecraftVersionList.Version.class);
+                String inheritsFrom = versionInfo != null ? versionInfo.inheritsFrom : null;
+                if (inheritsFrom == null || inheritsFrom.isEmpty() || inheritsFrom.equals(versionName)) break;
+                versionName = inheritsFrom;
+            } catch (Throwable th) {
+                Logging.w(InfoDistributor.LAUNCHER_NAME, "Failed to resolve inherited classpath for " + versionName, th);
+                break;
+            }
+        }
+        return classpaths;
     }
 
 
@@ -287,7 +334,7 @@ public final class Tools {
         PrintWriter printWriter = new PrintWriter(stringWriter);
         throwable.printStackTrace(printWriter);
         printWriter.close();
-        return stringWriter.toString();
+        return BrandingSanitizer.sanitize(stringWriter.toString());
     }
 
     public static void showError(Context ctx, Throwable e) {
@@ -318,7 +365,8 @@ public final class Tools {
         Logging.e("ShowError", printToString(e));
 
         Runnable runnable = () -> {
-            final String errMsg = showMore ? printToString(e) : rolledMessage != null ? rolledMessage : e.getMessage();
+            final String rawErrMsg = showMore ? printToString(e) : rolledMessage != null ? rolledMessage : e.getMessage();
+            final String errMsg = BrandingSanitizer.sanitize(rawErrMsg);
             AlertDialog.Builder builder = new AlertDialog.Builder(ctx, R.style.CustomAlertDialogTheme)
                     .setTitle(titleId)
                     .setMessage(errMsg)
@@ -333,7 +381,7 @@ public final class Tools {
                     })
                     .setNegativeButton(showMore ? R.string.error_show_less : R.string.error_show_more, (p1, p2) -> showError(ctx, titleId, rolledMessage, e, exitIfOk, !showMore))
                     .setNeutralButton(android.R.string.copy, (p1, p2) -> {
-                        StringUtils.copyText("error", printToString(e), ctx);
+                        StringUtils.copyText("error", BrandingSanitizer.sanitize(printToString(e)), ctx);
                         if(exitIfOk) {
                             if (ctx instanceof MainActivity) {
                                 ZHTools.killProcess();
@@ -566,10 +614,11 @@ public final class Tools {
         for (String key : keyArr) {
             Object value = null;
             try {
-                Field fieldA = fromVer.getClass().getDeclaredField(key);
+                // getField() also resolves inherited public fields (e.g. "id" from FileProperties)
+                Field fieldA = fromVer.getClass().getField(key);
                 value = fieldA.get(fromVer);
                 if (((value instanceof String) && !((String) value).isEmpty()) || value != null) {
-                    Field fieldB = targetVer.getClass().getDeclaredField(key);
+                    Field fieldB = targetVer.getClass().getField(key);
                     fieldB.set(targetVer, value);
                 }
             } catch (Throwable th) {

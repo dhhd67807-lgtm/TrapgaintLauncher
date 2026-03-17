@@ -16,6 +16,7 @@ import com.movtery.zalithlauncher.setting.AllSettings;
 import com.movtery.zalithlauncher.utils.anim.ViewAnimUtils;
 
 import net.kdt.pojavlaunch.Logger;
+import net.kdt.pojavlaunch.utils.BrandingSanitizer;
 
 /**
  * A class able to display logs to the user.
@@ -110,7 +111,7 @@ public class LoggerView extends ConstraintLayout {
         mLogListener = text -> {
             if (binding.logView.getVisibility() != VISIBLE) return;
             post(() -> {
-                binding.logView.append(text + '\n');
+                binding.logView.append(BrandingSanitizer.sanitize(text) + '\n');
                 if (binding.scroll.isKeepFocusing())
                     binding.scroll.fullScroll(View.FOCUS_DOWN);
             });

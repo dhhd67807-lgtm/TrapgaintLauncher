@@ -26,6 +26,7 @@ import com.movtery.zalithlauncher.feature.version.utils.VersionIconUtils
 import com.movtery.zalithlauncher.plugins.driver.DriverPluginManager
 import com.movtery.zalithlauncher.renderer.Renderers
 import com.movtery.zalithlauncher.setting.AllSettings.Companion.versionIsolation
+import com.movtery.zalithlauncher.setting.AllSettings.Companion.renderer as globalRendererSetting
 import com.movtery.zalithlauncher.task.Task
 import com.movtery.zalithlauncher.task.TaskExecutors.Companion.getAndroidUI
 import com.movtery.zalithlauncher.ui.dialog.TipDialog
@@ -258,15 +259,34 @@ class VersionConfigFragment : FragmentWithAnim(R.layout.fragment_version_config)
                 customPath.text = config.getCustomPath().replaceFirst(ProfilePathManager.getCurrentPath().toRegex(), ".")
 
                 //渲染器
-                val renderersList = Renderers.getCompatibleRenderers(context).first
-                val rendererNames: MutableList<String> = ArrayList(renderersList.rendererIdentifier)
-                val renderList: MutableList<String> = ArrayList(renderersList.rendererNames.size + 1)
-                renderList.addAll(renderersList.rendererNames)
-                renderList.add(context.getString(R.string.generic_default))
+                val rendererItems = Renderers.getCompatibleRenderers(context).second
+                val rendererUniqueIds: MutableList<String> = rendererItems.map { it.getUniqueIdentifier() }.toMutableList()
+                val rendererLegacyIds: MutableList<String> = rendererItems.map { it.getRendererId() }.toMutableList()
+                val renderList: MutableList<String> = rendererItems.map { it.getRendererName() }.toMutableList()
+
+                val globalRendererName = rendererItems.firstOrNull {
+                    it.getUniqueIdentifier() == globalRendererSetting.getValue() || it.getRendererId() == globalRendererSetting.getValue()
+                }?.getRendererName()
+                val defaultRendererText = if (globalRendererName != null) {
+                    "${context.getString(R.string.generic_default)} ($globalRendererName)"
+                } else {
+                    context.getString(R.string.generic_default)
+                }
+                renderList.add(defaultRendererText)
+
                 var rendererIndex = renderList.size - 1
                 if (config.getRenderer().isNotEmpty()) {
-                    val index = rendererNames.indexOf(config.getRenderer())
-                    if (index != -1) rendererIndex = index
+                    val storedRenderer = config.getRenderer()
+                    val index = rendererUniqueIds.indexOf(storedRenderer)
+                        .takeIf { it != -1 }
+                        ?: rendererLegacyIds.indexOf(storedRenderer)
+                    if (index != -1) {
+                        rendererIndex = index
+                        // Migrate legacy renderer IDs to unique IDs for stable future matching.
+                        if (storedRenderer != rendererUniqueIds[index]) {
+                            config.setRenderer(rendererUniqueIds[index])
+                        }
+                    }
                 }
                 val rendererAdapter = DefaultSpinnerAdapter(rendererSpinner)
                 rendererAdapter.setItems(renderList)
@@ -275,7 +295,7 @@ class VersionConfigFragment : FragmentWithAnim(R.layout.fragment_version_config)
                 rendererSpinner.setOnSpinnerItemSelectedListener(
                     OnSpinnerItemSelectedListener { _: Int, _: String?, i1: Int, _: String? ->
                         if (i1 == renderList.size - 1) config.setRenderer("")
-                        else config.setRenderer(rendererNames[i1])
+                        else config.setRenderer(rendererUniqueIds[i1])
                     })
 
                 //驱动器

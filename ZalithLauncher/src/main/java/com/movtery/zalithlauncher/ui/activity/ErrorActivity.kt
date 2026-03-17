@@ -11,6 +11,7 @@ import com.movtery.zalithlauncher.R
 import com.movtery.zalithlauncher.databinding.ActivityErrorBinding
 import com.movtery.zalithlauncher.utils.ZHTools
 import net.kdt.pojavlaunch.Tools
+import net.kdt.pojavlaunch.utils.BrandingSanitizer
 
 class ErrorActivity : BaseActivity() {
     private lateinit var binding: ActivityErrorBinding
@@ -56,7 +57,7 @@ class ErrorActivity : BaseActivity() {
         val throwable = extras.getSerializable(BUNDLE_THROWABLE) as Throwable?
         val stackTrace = if (throwable != null) Tools.printToString(throwable) else "<null>"
         val strSavePath = extras.getString(BUNDLE_SAVE_PATH)
-        val errorText = "$strSavePath :\r\n\r\n$stackTrace"
+        val errorText = BrandingSanitizer.sanitize("$strSavePath :\r\n\r\n$stackTrace")
 
         binding.apply {
             this.errorTitle.text = InfoCenter.replaceName(context, R.string.error_fatal)

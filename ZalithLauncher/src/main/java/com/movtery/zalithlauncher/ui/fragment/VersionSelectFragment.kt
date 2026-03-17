@@ -21,6 +21,8 @@ import com.movtery.zalithlauncher.utils.ZHTools
 import net.kdt.pojavlaunch.Tools
 import net.kdt.pojavlaunch.modloaders.OptiFineUtils
 import org.greenrobot.eventbus.EventBus
+import java.io.File
+import java.util.Locale
 
 data class MinecraftVersion(val version: String, val imageRes: Int)
 
@@ -63,9 +65,15 @@ class VersionSelectFragment : FragmentWithAnim(R.layout.fragment_version_select)
         
         // Get loader type from arguments
         loaderType = arguments?.getString("LOADER_TYPE") ?: "VANILLA"
+
+        val displayVersions = if (loaderType == "CUSTOM") {
+            versions.filter { it.version == "1.21" }
+        } else {
+            versions
+        }
         
         binding.versionGrid.layoutManager = GridLayoutManager(requireContext(), 3)
-        binding.versionGrid.adapter = VersionAdapter(versions) { version ->
+        binding.versionGrid.adapter = VersionAdapter(displayVersions, loaderType) { version ->
             // Open VersionSelectorFragment to show release/snapshot/beta/alpha
             val bundle = Bundle()
             bundle.putString("SELECTED_VERSION", version.version)
@@ -166,6 +174,7 @@ class VersionSelectFragment : FragmentWithAnim(R.layout.fragment_version_select)
 
 class VersionAdapter(
     private val versions: List<MinecraftVersion>,
+    private val loaderType: String,
     private val onVersionClick: (MinecraftVersion) -> Unit
 ) : RecyclerView.Adapter<VersionAdapter.VersionViewHolder>() {
     
@@ -207,12 +216,52 @@ class VersionAdapter(
     }
     
     private fun checkIfVersionInstalled(versionPrefix: String): Boolean {
+        val targetLoaderType = normalizeLoaderType(loaderType)
         val versions = com.movtery.zalithlauncher.feature.version.VersionsManager.getVersions()
         return versions.any { installedVersion ->
-            val versionName = installedVersion.getVersionName()
             val versionInfo = installedVersion.getVersionInfo()
-            val mcVersion = versionInfo?.minecraftVersion ?: versionName
-            mcVersion.startsWith(versionPrefix)
+            val mcVersion = versionInfo?.minecraftVersion ?: installedVersion.getVersionName()
+            if (!mcVersion.startsWith(versionPrefix)) return@any false
+
+            detectLoaderType(installedVersion) == targetLoaderType
+        }
+    }
+
+    private fun detectLoaderType(version: com.movtery.zalithlauncher.feature.version.Version): String {
+        val lowerVersionName = version.getVersionName().lowercase(Locale.ROOT)
+        if (lowerVersionName.contains("dragon")) {
+            return "CUSTOM"
+        }
+
+        val loaderName = version.getVersionInfo()
+            ?.loaderInfo
+            ?.firstOrNull()
+            ?.name
+        if (!loaderName.isNullOrBlank()) {
+            return normalizeLoaderType(loaderName)
+        }
+
+        val versionNameType = normalizeLoaderType(version.getVersionName())
+        if (versionNameType != "VANILLA") return versionNameType
+
+        val versionJson = File(version.getVersionPath(), "${version.getVersionName()}.json")
+        return runCatching {
+            val json = versionJson.readText().uppercase(Locale.ROOT)
+            when {
+                json.contains("FABRIC") || json.contains("QUILT") -> "FABRIC"
+                json.contains("FORGE") || json.contains("NEOFORGE") -> "FORGE"
+                else -> "VANILLA"
+            }
+        }.getOrElse { "VANILLA" }
+    }
+
+    private fun normalizeLoaderType(rawLoaderType: String?): String {
+        val normalized = rawLoaderType?.trim()?.uppercase(Locale.ROOT) ?: return "VANILLA"
+        return when {
+            normalized == "CUSTOM" || normalized.contains("DRAGON") -> "CUSTOM"
+            normalized.contains("FABRIC") || normalized.contains("QUILT") -> "FABRIC"
+            normalized.contains("FORGE") || normalized.contains("NEOFORGE") -> "FORGE"
+            else -> "VANILLA"
         }
     }
     

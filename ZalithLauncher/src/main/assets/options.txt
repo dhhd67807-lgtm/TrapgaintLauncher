@@ -9,7 +9,7 @@ maxFps:260
 fboEnable:true
 fancyGraphics:false
 ao:0
-clouds:true
+clouds:false
 snooperEnabled:true
 enableVsync:false
 pauseOnLostFocus:true

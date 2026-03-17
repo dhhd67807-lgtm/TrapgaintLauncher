@@ -98,6 +98,7 @@
             app:layout_constraintTop_toBottomOf="@+id/button" />
 
         <com.movtery.zalithlauncher.ui.view.AnimButton
+            android:id="@+id/button4"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:onClick="performPaste"
@@ -167,6 +168,23 @@
             app:layout_constraintEnd_toStartOf="@+id/installmod_window_moveleft"
             tools:ignore="HardcodedText" />
 
+        <androidx.constraintlayout.widget.Group
+            android:id="@+id/installmod_overlay_controls"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:visibility="gone"
+            app:constraint_referenced_ids="installmod_btn2,installmod_btn3,button2,button,button3,button4,installmod_mouse_pri,installmod_mouse_sec,installmod_window_moveleft,installmod_window_moveright,installmod_window_moveup,installmod_window_movedown" />
+
+        <com.movtery.zalithlauncher.ui.view.AnimButton
+            android:id="@+id/installmod_toggle_overlay"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:onClick="toggleOverlayControls"
+            android:text="UI"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
+            tools:ignore="HardcodedText" />
+
     </androidx.constraintlayout.widget.ConstraintLayout>
 
     <com.kdt.LoggerView
@@ -176,4 +194,3 @@
         android:visibility="gone" />
 
 </FrameLayout>
-

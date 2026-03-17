@@ -336,6 +336,20 @@ abstract class AbstractResourceDownloadFragment(
         closeSpinner()
     }
 
+    @Subscribe
+    fun event(event: DownloadPageEvent.HeaderSearchEvent) {
+        if (!isResumed) return
+
+        val query = event.query
+        if (binding.nameEdit.text?.toString() != query) {
+            binding.nameEdit.setText(query)
+            binding.nameEdit.setSelection(query.length)
+        } else {
+            mFilters.name = query
+        }
+        search()
+    }
+
     private inner class SearchApiTask(
         private val mPreviousResult: SearchResult?
     ) : SelfReferencingFuture.FutureInterface {

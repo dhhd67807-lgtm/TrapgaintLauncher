@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- Zalith Launcher -->
+    <!-- Trapgaint -->
     <string name="generic_open">Mở</string>
     <string name="generic_close">Đóng</string>
     <string name="generic_return">Quay lại</string>
@@ -493,7 +493,7 @@
     <string name="setting_version_isolation_title">Cách ly Phiên bản</string>
     <string name="setting_version_isolation_desc">Kích hoạt cách ly phiên bản cho phiên bản trò chơi\nKhi tắt, đường dẫn trò chơi sẽ là .minecraft/\nKhi bật, đường dẫn trò chơi sẽ thay đổi thành .minecraft/versions/&lt;tên phiên bản&gt;/</string>
     <string name="setting_version_custom_info_title">Thông tin tùy chỉnh</string>
-    <string name="setting_version_custom_info_desc">Thông tin tùy chỉnh sẽ hiển thị ở góc dưới bên trái của menu chính trong trò chơi và góc trên bên trái của màn hình gỡ lỗi F3. Sau khi thêm trường [zl_version], trình khởi chạy sẽ thay thế nó bằng số phiên bản của trình khởi chạy.</string>
+    <string name="setting_version_custom_info_desc">Thông tin tùy chỉnh sẽ hiển thị ở góc dưới bên trái của menu chính trong trò chơi và góc trên bên trái của màn hình gỡ lỗi F3. Sau khi thêm trường [tg_version], trình khởi chạy sẽ thay thế nó bằng số phiên bản của trình khởi chạy.</string>
     <string name="setting_set_game_language_title">Tự động đặt ngôn ngữ trò chơi</string>
     <string name="setting_set_game_language_desc">Tự động đặt ngôn ngữ trò chơi thành ngôn ngữ đã chọn khi khởi động trò chơi</string>
     <string name="setting_set_game_language_list">Đặt ngôn ngữ trò chơi</string>
@@ -686,4 +686,6 @@
     <!-- Sponsorship Related -->
     <string name="request_sponsorship_title">Hỗ trợ phát triển của tôi</string>
     <string name="request_sponsorship_message">Phần lớn nội dung của phần mềm này do một mình tôi phát triển và bảo trì. Nếu bạn thấy phần mềm này hữu ích và có điều kiện, mong bạn xem xét tài trợ cho tôi, để tôi có thêm động lực tiếp tục phát triển và cải tiến, cảm ơn sự ủng hộ của bạn!</string>
+    <string name="account_change_skin">Đổi skin</string>
+    <string name="game_launching">Đang khởi chạy Minecraft</string>
 </resources>

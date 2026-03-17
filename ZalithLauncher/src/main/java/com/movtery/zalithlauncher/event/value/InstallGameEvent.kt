@@ -9,7 +9,7 @@ import com.movtery.zalithlauncher.feature.version.install.InstallTaskItem
  * @param minecraftVersion MC原版版本
  * @param customVersionName 自定义的版本文件夹名称
  * @param taskMap 安装任务
- * @param loaderType 加载器类型 (VANILLA, FABRIC, FORGE)
+ * @param loaderType 加载器类型 (VANILLA, FABRIC, FORGE, CUSTOM)
  */
 class InstallGameEvent(
     val minecraftVersion: String,

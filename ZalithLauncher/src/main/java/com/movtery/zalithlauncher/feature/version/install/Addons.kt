@@ -6,6 +6,7 @@ enum class Addon(val addonName: String) {
     NEOFORGE("NeoForge"),
     FABRIC("Fabric"),
     FABRIC_API("Fabric API"),
+    DRAGON_CLIENT("Dragon Client"),
     QUILT("Quilt"),
     QSL("QSL");
 
@@ -14,8 +15,9 @@ enum class Addon(val addonName: String) {
             OPTIFINE to setOf(OPTIFINE, FORGE),
             FORGE to setOf(OPTIFINE, FORGE),
             NEOFORGE to setOf(NEOFORGE),
-            FABRIC to setOf(FABRIC, FABRIC_API),
-            FABRIC_API to setOf(FABRIC, FABRIC_API),
+            FABRIC to setOf(FABRIC, FABRIC_API, DRAGON_CLIENT),
+            FABRIC_API to setOf(FABRIC, FABRIC_API, DRAGON_CLIENT),
+            DRAGON_CLIENT to setOf(FABRIC, FABRIC_API, DRAGON_CLIENT),
             QUILT to setOf(QUILT, QSL),
             QSL to setOf(QUILT, QSL)
         )

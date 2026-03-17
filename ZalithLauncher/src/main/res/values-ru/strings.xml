@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- Zalith Launcher -->
+    <!-- Trapgaint -->
     <string name="generic_open">Открыть</string>
     <string name="generic_close">Закрыть</string>
     <string name="generic_return">Вернуться</string>
@@ -493,7 +493,7 @@
     <string name="setting_version_isolation_title">Изоляция версии</string>
     <string name="setting_version_isolation_desc">Включить изоляцию версий для игры\nПри отключении путь к игре будет .minecraft/\nПри включении путь к игре изменится на .minecraft/versions/&lt;имя версии&gt;/</string>
     <string name="setting_version_custom_info_title">Пользовательская информация</string>
-    <string name="setting_version_custom_info_desc">Пользовательская информация будет отображаться в нижнем левом углу главного меню игры и в верхнем левом углу экрана отладки F3. После добавления поля [zl_version] загрузчик заменит его на номер версии загрузчика.</string>
+    <string name="setting_version_custom_info_desc">Пользовательская информация будет отображаться в нижнем левом углу главного меню игры и в верхнем левом углу экрана отладки F3. После добавления поля [tg_version] загрузчик заменит его на номер версии загрузчика.</string>
     <string name="setting_set_game_language_title">Автоматическая настройка языка игры</string>
     <string name="setting_set_game_language_desc">При запуске игры автоматически устанавливать язык игры на выбранный</string>
     <string name="setting_set_game_language_list">Установить язык игры</string>
@@ -686,4 +686,6 @@
     <!-- Sponsorship Related -->
     <string name="request_sponsorship_title">Поддержите мою разработку</string>
     <string name="request_sponsorship_message">Большую часть этого программного обеспечения разработал и поддерживаю только я. Если вы считаете, что это программное обеспечение полезно для вас и у вас есть возможность, пожалуйста, рассмотрите возможность поддержки меня, чтобы у меня было больше мотивации продолжать разработку и улучшение. Спасибо за вашу поддержку!</string>
+    <string name="account_change_skin">Изменить скин</string>
+    <string name="game_launching">Запуск Minecraft</string>
 </resources>

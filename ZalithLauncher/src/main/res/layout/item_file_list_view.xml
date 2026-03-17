@@ -73,7 +73,7 @@
         android:layout_height="@dimen/_16sdp"
         android:layout_marginEnd="@dimen/_8sdp"
         android:src="@drawable/ic_check"
-        android:tint="#4CAF50"
+        app:tint="#4CAF50"
         android:visibility="gone"
         app:layout_constraintEnd_toStartOf="@+id/delete_button"
         app:layout_constraintTop_toTopOf="parent"

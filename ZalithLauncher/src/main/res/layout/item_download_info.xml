@@ -54,7 +54,7 @@
             android:textSize="@dimen/_8ssp"
             android:clickable="false"
             android:focusable="false"
-            tools:text="Zalith"
+            tools:text="Trapgaint"
             tools:ignore="SmallSp" />
 
     </LinearLayout>

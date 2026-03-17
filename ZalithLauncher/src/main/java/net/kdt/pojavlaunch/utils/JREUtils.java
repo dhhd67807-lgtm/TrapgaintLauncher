@@ -51,6 +51,7 @@ import java.io.FileReader;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.TimeZone;
 
@@ -130,7 +131,13 @@ public final class JREUtils {
             public void run() {
                 try {
                     if (logcatPb == null) {
-                        logcatPb = new ProcessBuilder().command("logcat", /* "-G", "1mb", */ "-v", "brief", "-s", "jrelog:I", "LIBGL:I", "NativeInput").redirectErrorStream(true);
+                        List<String> command = new ArrayList<>(Arrays.asList("logcat", /* "-G", "1mb", */ "-v", "brief", "-s", "jrelog:I", "LIBGL:I"));
+                        // NativeInput can produce very noisy logs and cause unnecessary I/O on low-end devices.
+                        // Keep it only when in-launcher log output is explicitly enabled.
+                        if (AllSettings.getEnableLogOutput().getValue()) {
+                            command.add("NativeInput");
+                        }
+                        logcatPb = new ProcessBuilder().command(command).redirectErrorStream(true);
                     }
 
                     Logging.i("jrelog-logcat","Clearing logcat");
@@ -142,7 +149,7 @@ public final class JREUtils {
                     int len;
                     while ((len = p.getInputStream().read(buf)) != -1) {
                         String currStr = new String(buf, 0, len);
-                        Logger.appendToLog(currStr);
+                        Logger.appendToLog(BrandingSanitizer.sanitize(currStr));
                     }
 
                     if (p.waitFor() != 0) {
@@ -152,12 +159,12 @@ public final class JREUtils {
                         if (failTime <= 10) {
                             run();
                         } else {
-                            Logger.appendToLog("ERROR: Unable to get more Logging.");
+                            Logger.appendToLog(BrandingSanitizer.sanitize("ERROR: Unable to get more Logging."));
                         }
                     }
                 } catch (Throwable e) {
                     Logging.e("jrelog-logcat", "Exception on logging thread", e);
-                    Logger.appendToLog("Exception on logging thread:\n" + Log.getStackTraceString(e));
+                    Logger.appendToLog(BrandingSanitizer.sanitize("Exception on logging thread:\n" + Log.getStackTraceString(e)));
                 }
             }
         }).start();
@@ -248,6 +255,9 @@ public final class JREUtils {
             envMap.put("LIBGL_NOBGRA", "1"); // Disable BGRA for compatibility
             envMap.put("LIBGL_NOTEXMAT", "1"); // Disable texture matrix for stability
             envMap.put("LIBGL_NOPSA", "1"); // Disable persistent buffer mapping (fixes MC 1.21+)
+            envMap.putIfAbsent("LIBGL_BATCH", "1");
+            envMap.putIfAbsent("LIBGL_USEVBO", "1");
+            envMap.putIfAbsent("LIBGL_FASTMATH", "1");
         }
 
         envMap.putAll(currentRenderer.getRendererEnv().getValue());
@@ -265,6 +275,8 @@ public final class JREUtils {
             envMap.put("force_glsl_extensions_warn", "true");
             envMap.put("allow_higher_compat_version", "true");
             envMap.put("allow_glsl_extension_directive_midshader", "true");
+            // Threaded Mesa can reduce frame-time spikes on weaker CPUs.
+            envMap.putIfAbsent("mesa_glthread", "true");
             envMap.put("LIB_MESA_NAME", loadGraphicsLibrary());
         }
 
@@ -333,11 +345,14 @@ public final class JREUtils {
                 setRendererEnv(envMap);
             }
 
-            envMap.put("ZALITH_VERSION_CODE", String.valueOf(ZHTools.getVersionCode()));
+            String launcherVersionCode = String.valueOf(ZHTools.getVersionCode());
+            // Keep legacy key for backward compatibility with existing native integrations.
+            envMap.put("ZALITH_VERSION_CODE", launcherVersionCode);
+            envMap.put("TRAPGAINT_VERSION_CODE", launcherVersionCode);
         }
 
         for (Map.Entry<String, String> env : envMap.entrySet()) {
-            Logger.appendToLog("Added custom env: " + env.getKey() + "=" + env.getValue());
+            Logger.appendToLog(BrandingSanitizer.sanitize("Added custom env: " + env.getKey() + "=" + env.getValue()));
             try {
                 Os.setenv(env.getKey(), env.getValue(), true);
             }catch (NullPointerException exception){
@@ -400,7 +415,6 @@ public final class JREUtils {
 
         // Some phones are not using the right number of cores, fix that
         int availableProcessors = java.lang.Runtime.getRuntime().availableProcessors();
-        userArgs.add("-XX:ActiveProcessorCount=" + availableProcessors);
 
         // Determine Java version from runtime
         Runtime currentRuntime = MultiRTUtils.read(runtime.name);
@@ -409,6 +423,9 @@ public final class JREUtils {
         // Get allocated RAM to determine if low-RAM optimizations are needed
         int allocatedRAM = AllSettings.getRamAllocation().getValue().getValue();
         boolean isLowRAM = allocatedRAM <= 2048; // 2GB or less
+        boolean isForgeLike = isForgeLikeVersion(gameVersion);
+        int tunedProcessorCount = isLowRAM ? Math.min(4, Math.max(2, availableProcessors)) : availableProcessors;
+        userArgs.add("-XX:ActiveProcessorCount=" + tunedProcessorCount);
 
         // Ultra-optimized performance for smooth gameplay (iOS-like smoothness)
         userArgs.add("-XX:+UnlockExperimentalVMOptions");
@@ -440,11 +457,12 @@ public final class JREUtils {
                 userArgs.add("-XX:InitiatingHeapOccupancyPercent=30"); // Earlier GC
                 userArgs.add("-XX:G1MixedGCCountTarget=4"); // Fewer mixed GC cycles
                 userArgs.add("-XX:G1HeapWastePercent=3"); // Less waste tolerance
-                userArgs.add("-XX:ParallelGCThreads=" + Math.min(4, Math.max(2, availableProcessors))); // Limit GC threads
-                userArgs.add("-XX:ConcGCThreads=" + Math.max(1, availableProcessors / 4)); // Concurrent threads
+                userArgs.add("-XX:ParallelGCThreads=" + Math.min(4, Math.max(2, tunedProcessorCount))); // Limit GC threads
+                userArgs.add("-XX:ConcGCThreads=" + Math.max(1, tunedProcessorCount / 4)); // Concurrent threads
+                userArgs.add("-XX:CICompilerCount=2");
             } else {
                 userArgs.add("-XX:G1HeapRegionSize=8M");
-                userArgs.add("-XX:ParallelGCThreads=" + Math.max(2, availableProcessors));
+                userArgs.add("-XX:ParallelGCThreads=" + Math.max(2, tunedProcessorCount));
             }
             
             userArgs.add("-XX:-UseGCOverheadLimit");
@@ -460,13 +478,14 @@ public final class JREUtils {
             
             if (isLowRAM) {
                 // Aggressive low-RAM CMS settings
-                userArgs.add("-XX:ParallelGCThreads=" + Math.min(4, Math.max(2, availableProcessors)));
+                userArgs.add("-XX:ParallelGCThreads=" + Math.min(4, Math.max(2, tunedProcessorCount)));
                 userArgs.add("-XX:NewRatio=3"); // Smaller young generation
                 userArgs.add("-XX:CMSInitiatingOccupancyFraction=60"); // Earlier CMS
                 userArgs.add("-XX:+UseCMSInitiatingOccupancyOnly");
                 userArgs.add("-XX:CMSMaxAbortablePrecleanTime=1000"); // Limit preclean time
+                userArgs.add("-XX:CICompilerCount=2");
             } else {
-                userArgs.add("-XX:ParallelGCThreads=" + Math.max(2, availableProcessors));
+                userArgs.add("-XX:ParallelGCThreads=" + Math.max(2, tunedProcessorCount));
             }
             
             userArgs.add("-XX:+CMSParallelRemarkEnabled");
@@ -495,18 +514,24 @@ public final class JREUtils {
         userArgs.add("-XX:+UseInlineCaches"); // Inline caching
         
         // Memory and allocation optimizations
-        userArgs.add("-XX:+AlwaysPreTouch"); // Pre-touch memory pages
+        if (!isLowRAM && !isForgeLike) {
+            // Forge startup is more memory-spiky on Android; avoid pre-touch to reduce LMK kills.
+            userArgs.add("-XX:+AlwaysPreTouch");
+        }
         userArgs.add("-XX:+UseTLAB"); // Thread-local allocation buffers
         userArgs.add("-XX:+ResizeTLAB"); // Resize TLABs dynamically
         
         // Rendering and graphics optimizations
-        userArgs.add("-Dsun.java2d.opengl=true"); // Enable OpenGL pipeline
+        userArgs.add("-Dsun.java2d.opengl=" + (!isForgeLike)); // Safer for Forge installers/runtime.
         
         // Fix for Minecraft 1.21+ buffer mapping issues
         // Force compatibility mode for buffer operations
-        userArgs.add("-Dminecraft.forceCompatibilityMode=true");
+        if (!isForgeLike) {
+            userArgs.add("-Dminecraft.forceCompatibilityMode=true");
+        }
         userArgs.add("-Dfml.earlyprogresswindow=false"); // Disable Forge progress window
-        userArgs.add("-Djava.awt.headless=true"); // Headless mode for better compatibility
+        // NOTE: Do NOT set -Djava.awt.headless=true as it prevents Minecraft from creating a window
+        // Caciocavallo AWT implementation requires headless=false
         userArgs.add("-Dsun.java2d.d3d=false"); // Disable D3D
         userArgs.add("-Dsun.java2d.noddraw=true"); // Disable DirectDraw
         
@@ -521,7 +546,7 @@ public final class JREUtils {
         
         // Low-RAM specific game optimizations
         if (isLowRAM) {
-            userArgs.add("-Djava.awt.headless=true"); // Headless mode
+            // NOTE: Do NOT set -Djava.awt.headless=true as it prevents Minecraft from creating a window
             userArgs.add("-Dlog4j2.formatMsgNoLookups=true"); // Disable log4j lookups
         }
 
@@ -533,7 +558,7 @@ public final class JREUtils {
             if (arg.startsWith("--accessToken")) {
                 i += 1;
             }
-            Logger.appendToLog("JVMArg: " + arg);
+            Logger.appendToLog(BrandingSanitizer.sanitize("JVMArg: " + arg));
         }
 
         setupExitMethod(activity.getApplication());
@@ -542,11 +567,19 @@ public final class JREUtils {
         userArgs.add(0,"java"); //argv[0] is the program name according to C standard.
 
         final int exitCode = VMLauncher.launchJVM(userArgs.toArray(new String[0]));
-        Logger.appendToLog("Java Exit code: " + exitCode);
+        Logger.appendToLog(BrandingSanitizer.sanitize("Java Exit code: " + exitCode));
         if (exitCode != 0) {
             ErrorActivity.showExitMessage(activity, exitCode, false);
         }
         EventBus.getDefault().post(new JvmExitEvent(exitCode));
+    }
+
+    private static boolean isForgeLikeVersion(Version gameVersion) {
+        if (gameVersion == null) return false;
+        String versionName = gameVersion.getVersionName();
+        if (versionName == null) return false;
+        String lower = versionName.toLowerCase(Locale.ROOT);
+        return lower.contains("forge");
     }
 
     public static void launchWithUtils(

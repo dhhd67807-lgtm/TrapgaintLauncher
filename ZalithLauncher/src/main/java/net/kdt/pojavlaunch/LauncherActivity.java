@@ -10,9 +10,12 @@ import android.content.res.ColorStateList;
 import android.graphics.Bitmap;
 import android.os.Build;
 import android.os.Bundle;
+import android.text.Editable;
+import android.text.TextWatcher;
 import android.text.method.LinkMovementMethod;
 import android.text.util.Linkify;
 import android.view.View;
+import android.view.inputmethod.EditorInfo;
 import android.widget.Toast;
 
 import androidx.activity.OnBackPressedCallback;
@@ -38,6 +41,7 @@ import com.movtery.zalithlauncher.event.single.PageOpacityChangeEvent;
 import com.movtery.zalithlauncher.event.single.SwapToLoginEvent;
 import com.movtery.zalithlauncher.event.sticky.MinecraftVersionValueEvent;
 import com.movtery.zalithlauncher.event.value.AddFragmentEvent;
+import com.movtery.zalithlauncher.event.value.DownloadPageEvent;
 import com.movtery.zalithlauncher.event.value.DownloadProgressKeyEvent;
 import com.movtery.zalithlauncher.event.value.InstallGameEvent;
 import com.movtery.zalithlauncher.event.value.InstallLocalModpackEvent;
@@ -76,6 +80,7 @@ import com.movtery.zalithlauncher.ui.fragment.BaseFragment;
 import com.movtery.zalithlauncher.ui.fragment.DownloadFragment;
 import com.movtery.zalithlauncher.ui.fragment.DownloadModFragment;
 import com.movtery.zalithlauncher.ui.fragment.SettingsFragment;
+import com.movtery.zalithlauncher.ui.fragment.download.resource.AbstractResourceDownloadFragment;
 import com.movtery.zalithlauncher.ui.subassembly.settingsbutton.ButtonType;
 import com.movtery.zalithlauncher.ui.subassembly.settingsbutton.SettingsButtonWrapper;
 import com.movtery.zalithlauncher.ui.subassembly.view.DraggableViewWrapper;
@@ -142,6 +147,7 @@ public class LauncherActivity extends BaseActivity {
                     mSettingsButtonWrapper.setButtonType(ButtonType.HOME);
                 }
             }
+            updateTopHeaderForFragment(f);
         }
     };
 
@@ -457,8 +463,8 @@ public class LauncherActivity extends BaseActivity {
         //     }
         // });
         
-        // Dragon Launcher title
-        binding.appTitleText.setText("Dragon Launcher");
+        // Trapgaint title
+        binding.appTitleText.setText("Trapgaint");
         
         // Load user skin face in top right corner
         loadProfileSkinFace();
@@ -503,7 +509,28 @@ public class LauncherActivity extends BaseActivity {
         });
         
         // Title text - no animation
-        binding.appTitleText.setText("Dragon Launcher");
+        binding.appTitleText.setText("Trapgaint");
+
+        binding.headerSearchInput.setOnEditorActionListener((v, actionId, event) -> {
+            if (actionId == EditorInfo.IME_ACTION_SEARCH || actionId == EditorInfo.IME_ACTION_DONE) {
+                EventBus.getDefault().post(new DownloadPageEvent.HeaderSearchEvent(v.getText().toString().trim()));
+                return true;
+            }
+            return false;
+        });
+        binding.headerSearchInput.addTextChangedListener(new TextWatcher() {
+            @Override
+            public void beforeTextChanged(CharSequence s, int start, int count, int after) { }
+
+            @Override
+            public void onTextChanged(CharSequence s, int start, int before, int count) { }
+
+            @Override
+            public void afterTextChanged(Editable s) {
+                if (s == null || s.length() != 0) return;
+                EventBus.getDefault().post(new DownloadPageEvent.HeaderSearchEvent(""));
+            }
+        });
         
         // Hide the bottom progress layout completely and don't register it as a task listener
         binding.progressLayout.setVisibility(View.GONE);
@@ -545,6 +572,14 @@ public class LauncherActivity extends BaseActivity {
         //愚人节彩蛋
         if (ZHTools.checkDate(4, 1)) binding.hair.setVisibility(View.VISIBLE);
         else binding.hair.setVisibility(View.GONE);
+    }
+
+    private void updateTopHeaderForFragment(@NonNull Fragment fragment) {
+        if (binding == null) return;
+        boolean showSearchBar = fragment instanceof DownloadFragment
+                || fragment instanceof AbstractResourceDownloadFragment;
+        binding.appTitleText.setVisibility(showSearchBar ? View.GONE : View.VISIBLE);
+        binding.headerSearchInput.setVisibility(showSearchBar ? View.VISIBLE : View.GONE);
     }
 
     @Override

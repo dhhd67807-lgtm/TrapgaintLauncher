@@ -85,7 +85,8 @@ class DownloadForgeFragment : ModListFragment() {
 
         currentTask?.apply { if (isCancelled) return }
 
-        val mcForgeVersions = mForgeVersions[mcVersion] ?: run {
+        // Metadata is returned oldest -> newest; show newest first for easier selection.
+        val mcForgeVersions = mForgeVersions[mcVersion]?.asReversed() ?: run {
             empty()
             return
         }

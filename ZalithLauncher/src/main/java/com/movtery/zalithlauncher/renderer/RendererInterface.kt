@@ -56,8 +56,9 @@ interface RendererInterface {
      */
     fun supportsVersion(mcVersion: String): Boolean {
         if (getMinMCVersion().isEmpty() && getMaxMCVersion().isEmpty()) return true
-        
-        val version = parseVersion(mcVersion)
+
+        // If the version can't be parsed reliably, only unrestricted renderers should be used.
+        val version = parseVersion(mcVersion) ?: return false
         val minVersion = if (getMinMCVersion().isNotEmpty()) parseVersion(getMinMCVersion()) else null
         val maxVersion = if (getMaxMCVersion().isNotEmpty()) parseVersion(getMaxMCVersion()) else null
         
@@ -67,8 +68,19 @@ interface RendererInterface {
         return true
     }
     
-    private fun parseVersion(version: String): List<Int> {
-        return version.split(".").mapNotNull { it.toIntOrNull() }
+    private fun parseVersion(version: String): List<Int>? {
+        val matches = Regex("""(?<!\d)(\d+)\.(\d+)(?:\.(\d+))?(?!\d)""")
+            .findAll(version)
+            .mapNotNull { match ->
+                val major = match.groupValues[1].toIntOrNull() ?: return@mapNotNull null
+                val minor = match.groupValues[2].toIntOrNull() ?: return@mapNotNull null
+                val patch = match.groupValues.getOrNull(3)?.toIntOrNull() ?: 0
+                listOf(major, minor, patch)
+            }
+            .toList()
+
+        if (matches.isEmpty()) return null
+        return matches.firstOrNull { parsed -> parsed.firstOrNull() == 1 } ?: matches.first()
     }
     
     private fun compareVersions(v1: List<Int>, v2: List<Int>): Int {
@@ -76,7 +88,7 @@ interface RendererInterface {
         for (i in 0 until maxLength) {
             val num1 = v1.getOrNull(i) ?: 0
             val num2 = v2.getOrNull(i) ?: 0
-            if (num1 != num2) return num1 - num2
+            if (num1 != num2) return num1.compareTo(num2)
         }
         return 0
     }

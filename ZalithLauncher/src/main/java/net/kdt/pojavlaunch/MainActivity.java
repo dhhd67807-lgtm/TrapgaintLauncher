@@ -143,8 +143,9 @@ public class MainActivity extends BaseActivity implements ControlButtonMenuListe
         if(AllSettings.getAlternateSurface().getValue()) window.setBackgroundDrawable(null);
         else window.setBackgroundDrawable(new ColorDrawable(Color.BLACK));
 
-        // Set the sustained performance mode for available APIs
-        window.setSustainedPerformanceMode(AllSettings.getSustainedPerformance().getValue());
+        // Keep frame-time more stable on weaker devices without changing visual settings.
+        boolean lowEndDevice = Tools.getTotalDeviceMemory(this) <= 3072;
+        window.setSustainedPerformanceMode(AllSettings.getSustainedPerformance().getValue() || lowEndDevice);
 
         // 防止系统息屏
         window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
@@ -178,7 +179,7 @@ public class MainActivity extends BaseActivity implements ControlButtonMenuListe
         binding.mainControlLayout.setMenuListener(this);
 
         binding.mainDrawerOptions.setScrimColor(Color.TRANSPARENT);
-        binding.mainDrawerOptions.setDrawerLockMode(DrawerLayout.LOCK_MODE_LOCKED_CLOSED);
+        binding.mainDrawerOptions.setDrawerLockMode(DrawerLayout.LOCK_MODE_UNLOCKED);
 
         try {
             File latestLogFile = new File(PathManager.DIR_GAME_HOME, "latestlog.txt");
@@ -246,9 +247,16 @@ public class MainActivity extends BaseActivity implements ControlButtonMenuListe
             if (versionInfo != null && versionInfo.getLoaderInfo() != null && versionInfo.getLoaderInfo().length > 0) {
                 loaderType = versionInfo.getLoaderInfo()[0].getName().toUpperCase();
             }
+            String versionNameLower = minecraftVersion.getVersionName() == null ? "" : minecraftVersion.getVersionName().toLowerCase(java.util.Locale.ROOT);
+            if (versionNameLower.contains("dragon")) {
+                loaderType = "CUSTOM";
+            }
             
             // Set loader icon based on type
             switch (loaderType) {
+                case "CUSTOM":
+                    loaderIcon.setImageResource(R.drawable.dragon_logo);
+                    break;
                 case "FABRIC":
                     loaderIcon.setImageResource(R.drawable.ic_fabric_loader);
                     break;

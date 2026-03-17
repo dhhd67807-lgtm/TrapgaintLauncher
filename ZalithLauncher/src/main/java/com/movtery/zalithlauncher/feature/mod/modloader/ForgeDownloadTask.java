@@ -338,27 +338,60 @@ public class ForgeDownloadTask implements InstallTask, Tools.DownloaderFeedback 
 
     public boolean findVersion() throws Exception {
         List<String> forgeVersions = ForgeUtils.downloadForgeVersions(false);
-        if(forgeVersions == null) {
+        if (forgeVersions == null || forgeVersions.isEmpty()) {
+            android.util.Log.w("ForgeDownloadTask", "Forge metadata cache is empty, forcing refresh");
+            forgeVersions = ForgeUtils.downloadForgeVersions(true);
+        }
+        if (forgeVersions == null || forgeVersions.isEmpty()) {
             android.util.Log.e("ForgeDownloadTask", "Failed to download Forge versions list");
             return false;
         }
-        
-        android.util.Log.d("ForgeDownloadTask", "Looking for Forge version: " + mGameVersion + "-" + mLoaderVersion);
+
+        String exactPrefix = mGameVersion + "-" + mLoaderVersion;
+        android.util.Log.d("ForgeDownloadTask", "Looking for Forge version prefix: " + exactPrefix);
         android.util.Log.d("ForgeDownloadTask", "Available Forge versions: " + forgeVersions.size());
-        
-        String versionStart = mGameVersion + "-" + mLoaderVersion;
-        for(String versionName : forgeVersions) {
-            android.util.Log.d("ForgeDownloadTask", "Checking version: " + versionName + " against " + versionStart);
-            if(versionName.startsWith(versionStart)) {
-                mFullVersion = versionName;
-                mDownloadUrl = ForgeUtils.getInstallerUrl(mFullVersion);
-                android.util.Log.i("ForgeDownloadTask", "Found matching Forge version: " + mFullVersion);
-                return true;
+
+        String matchedVersion = findNewestMatchingVersion(forgeVersions, exactPrefix);
+        if (matchedVersion == null) {
+            android.util.Log.w("ForgeDownloadTask", "No exact Forge match in cached list, forcing refresh");
+            List<String> refreshedVersions = ForgeUtils.downloadForgeVersions(true);
+            if (refreshedVersions != null && !refreshedVersions.isEmpty()) {
+                forgeVersions = refreshedVersions;
+                matchedVersion = findNewestMatchingVersion(forgeVersions, exactPrefix);
             }
         }
-        
-        android.util.Log.e("ForgeDownloadTask", "No matching Forge version found for " + versionStart);
-        return false;
+
+        // Fallback: if exact loader version is unavailable, pick the newest Forge for this MC version.
+        if (matchedVersion == null) {
+            String gamePrefix = mGameVersion + "-";
+            matchedVersion = findNewestMatchingVersion(forgeVersions, gamePrefix);
+            if (matchedVersion != null) {
+                android.util.Log.w(
+                    "ForgeDownloadTask",
+                    "Exact loader " + exactPrefix + " not found, falling back to latest for MC " + mGameVersion + ": " + matchedVersion
+                );
+            }
+        }
+
+        if (matchedVersion == null) {
+            android.util.Log.e("ForgeDownloadTask", "No compatible Forge version found for MC " + mGameVersion);
+            return false;
+        }
+
+        mFullVersion = matchedVersion;
+        mDownloadUrl = ForgeUtils.getInstallerUrl(mFullVersion);
+        android.util.Log.i("ForgeDownloadTask", "Resolved Forge version: " + mFullVersion);
+        return true;
+    }
+
+    private String findNewestMatchingVersion(List<String> forgeVersions, String prefix) {
+        for (int i = forgeVersions.size() - 1; i >= 0; i--) {
+            String versionName = forgeVersions.get(i);
+            if (versionName.startsWith(prefix)) {
+                return versionName;
+            }
+        }
+        return null;
     }
 
 }

@@ -90,7 +90,7 @@ class Version(
     }
 
     fun getCustomInfo(): String = versionConfig.getCustomInfo().getValueOrDefault(AllSettings.versionCustomInfo.getValue())
-        .replace("[zl_version]", ZHTools.getVersionName())
+        .replace("[tg_version]", ZHTools.getVersionName())
 
     fun getVersionInfo(): VersionInfo? {
         return runCatching {

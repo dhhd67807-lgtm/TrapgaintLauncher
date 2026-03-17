@@ -298,13 +298,12 @@ class InstallGameFragment : FragmentWithAnim(R.layout.fragment_install_game), Vi
                     }
                 }
                 Addon.FABRIC -> {
-                    taskMap[addon] = InstallTaskItem(taskPair.first, false, taskPair.second) {  activity, file ->
-                        installInGUITask(activity, addon.addonName, taskPair.first) { intent, argUtils ->
-                            argUtils.setFabric(intent, file, customVersionName)
-                        }
-                    }
+                    taskMap[addon] = InstallTaskItem(taskPair.first, false, taskPair.second, null)
                 }
                 Addon.FABRIC_API -> taskMap[addon] = InstallTaskItem(taskPair.first, true, taskPair.second) { _, file ->
+                    moveFile(file, File(getModPath(), "${taskPair.first}.jar"))
+                }
+                Addon.DRAGON_CLIENT -> taskMap[addon] = InstallTaskItem(taskPair.first, true, taskPair.second) { _, file ->
                     moveFile(file, File(getModPath(), "${taskPair.first}.jar"))
                 }
                 Addon.QUILT -> taskMap[addon] = InstallTaskItem(taskPair.first, false, taskPair.second, null)

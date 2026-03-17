@@ -63,6 +63,7 @@ public class ControlButton extends TextView implements ControlInterface {
     }
 
     public void setProperties(ControlData properties, boolean changePos) {
+        applySpecialMouseButtonStyle(properties);
         mProperties = properties;
         ControlInterface.super.setProperties(properties, changePos);
         mComputedRadius = ControlInterface.super.computeCornerRadius(mProperties.cornerRadius);
@@ -78,7 +79,78 @@ public class ControlButton extends TextView implements ControlInterface {
             mRectPaint.setAlpha(60);
         }
 
-        setText(properties.name);
+        setText(getDisplayLabel(properties));
+        setTextColor(Color.WHITE);
+    }
+
+    private CharSequence getDisplayLabel(ControlData properties) {
+        if (properties == null || properties.keycodes == null || properties.keycodes.length == 0) {
+            return properties == null ? "" : properties.name;
+        }
+        int primaryKey = properties.keycodes[0];
+        int secondaryKey = properties.keycodes.length > 1 ? properties.keycodes[1] : GLFW_KEY_UNKNOWN;
+        if (primaryKey == ControlData.SPECIALBTN_MOUSEPRI) {
+            return "LEFT";
+        }
+        if (primaryKey == ControlData.SPECIALBTN_MOUSESEC) {
+            return "RIGHT";
+        }
+        if (primaryKey == LwjglGlfwKeycode.GLFW_KEY_SPACE) {
+            return "SPACE";
+        }
+        if (primaryKey == LwjglGlfwKeycode.GLFW_KEY_LEFT_SHIFT) {
+            return "L.shift";
+        }
+        if (primaryKey == LwjglGlfwKeycode.GLFW_KEY_RIGHT_SHIFT) {
+            return "R.shift";
+        }
+        if (primaryKey == LwjglGlfwKeycode.GLFW_KEY_W && secondaryKey == GLFW_KEY_UNKNOWN) {
+            return "W";
+        }
+        if (primaryKey == LwjglGlfwKeycode.GLFW_KEY_A && secondaryKey == GLFW_KEY_UNKNOWN) {
+            return "A";
+        }
+        if (primaryKey == LwjglGlfwKeycode.GLFW_KEY_S && secondaryKey == GLFW_KEY_UNKNOWN) {
+            return "S";
+        }
+        if (primaryKey == LwjglGlfwKeycode.GLFW_KEY_D && secondaryKey == GLFW_KEY_UNKNOWN) {
+            return "D";
+        }
+        boolean isDiagonalMove =
+                (primaryKey == LwjglGlfwKeycode.GLFW_KEY_W && secondaryKey == LwjglGlfwKeycode.GLFW_KEY_A) ||
+                (primaryKey == LwjglGlfwKeycode.GLFW_KEY_W && secondaryKey == LwjglGlfwKeycode.GLFW_KEY_D) ||
+                (primaryKey == LwjglGlfwKeycode.GLFW_KEY_S && secondaryKey == LwjglGlfwKeycode.GLFW_KEY_A) ||
+                (primaryKey == LwjglGlfwKeycode.GLFW_KEY_S && secondaryKey == LwjglGlfwKeycode.GLFW_KEY_D) ||
+                (primaryKey == LwjglGlfwKeycode.GLFW_KEY_A && secondaryKey == LwjglGlfwKeycode.GLFW_KEY_W) ||
+                (primaryKey == LwjglGlfwKeycode.GLFW_KEY_D && secondaryKey == LwjglGlfwKeycode.GLFW_KEY_W) ||
+                (primaryKey == LwjglGlfwKeycode.GLFW_KEY_A && secondaryKey == LwjglGlfwKeycode.GLFW_KEY_S) ||
+                (primaryKey == LwjglGlfwKeycode.GLFW_KEY_D && secondaryKey == LwjglGlfwKeycode.GLFW_KEY_S);
+        if (isDiagonalMove) {
+            return "";
+        }
+        return properties.name;
+    }
+
+    private void applySpecialMouseButtonStyle(ControlData properties) {
+        if (properties == null || properties.keycodes == null || properties.keycodes.length == 0) {
+            return;
+        }
+        int primaryKey = properties.keycodes[0];
+        if (primaryKey == ControlData.SPECIALBTN_MOUSEPRI) {
+            properties.bgColor = Color.parseColor("#88F44336");
+            return;
+        }
+        if (primaryKey == ControlData.SPECIALBTN_MOUSESEC) {
+            properties.bgColor = Color.parseColor("#884CAF50");
+            return;
+        }
+        if (primaryKey == LwjglGlfwKeycode.GLFW_KEY_SPACE) {
+            properties.bgColor = Color.parseColor("#882196F3");
+            return;
+        }
+        if (primaryKey == LwjglGlfwKeycode.GLFW_KEY_LEFT_SHIFT || primaryKey == LwjglGlfwKeycode.GLFW_KEY_RIGHT_SHIFT) {
+            properties.bgColor = Color.parseColor("#889C27B0");
+        }
     }
 
     @Override

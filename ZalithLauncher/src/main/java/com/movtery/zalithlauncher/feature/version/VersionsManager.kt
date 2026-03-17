@@ -132,7 +132,7 @@ object VersionsManager {
                 // This handles cases where Forge/Fabric was installed with a custom name
                 android.util.Log.d("VersionsManager", "JSON file not found, searching for mismatched files...")
                 val files = versionFile.listFiles()
-                android.util.Log.d("VersionsManager", "Files in folder: ${files?.map { it.name }?.joinToString(", ")}")
+                android.util.Log.d("VersionsManager", "Files in folder count: ${files?.size ?: 0}")
                 
                 files?.forEach { file ->
                     if (file.isFile && file.name.endsWith(".json") && file.name != "${versionFile.name}.json") {

@@ -149,6 +149,22 @@ class VersionConfig(private var versionPath: File) : Parcelable {
     }
 
     companion object CREATOR : Parcelable.Creator<VersionConfig> {
+        private fun getConfigCandidates(versionPath: File, fileName: String): List<File> {
+            val currentConfigDir = getZalithVersionPath(versionPath)
+            val currentConfig = File(currentConfigDir, fileName)
+            val legacyConfigs = versionPath.listFiles()
+                ?.asSequence()
+                ?.filter { it.isDirectory && it.absolutePath != currentConfigDir.absolutePath }
+                ?.map { File(it, fileName) }
+                ?.toList()
+                ?: emptyList()
+            return listOf(currentConfig) + legacyConfigs
+        }
+
+        private fun firstExistingConfig(versionPath: File, fileName: String): File? {
+            return getConfigCandidates(versionPath, fileName).firstOrNull { it.exists() }
+        }
+
         override fun createFromParcel(parcel: Parcel): VersionConfig {
             val versionPath = File(parcel.readString().orEmpty())
             val isolationType = IsolationType.entries.getOrNull(parcel.readInt()) ?: IsolationType.FOLLOW_GLOBAL
@@ -168,12 +184,12 @@ class VersionConfig(private var versionPath: File) : Parcelable {
 
         @JvmStatic
         fun parseConfig(versionPath: File): VersionConfig {
-            //兼容旧版本的版本隔离文件（识别并保存为新版本后，旧的版本隔离文件将被删除）
-            val oldConfigFile = File(getZalithVersionPath(versionPath), "ZalithVersion.cfg")
-            val configFile = File(getZalithVersionPath(versionPath), "VersionConfig.json")
+            val oldConfigFile = firstExistingConfig(versionPath, "ZalithVersion.cfg")
+            val configFile = firstExistingConfig(versionPath, "VersionConfig.json")
+            val currentConfigDir = getZalithVersionPath(versionPath)
 
             return runCatching getConfig@{
-                if (oldConfigFile.exists()) {
+                if (oldConfigFile != null && oldConfigFile.exists()) {
                     runCatching {
                         Tools.GLOBAL_GSON.fromJson(Tools.read(oldConfigFile), VersionConfig::class.java).apply {
                             setIsolationType(IsolationType.ENABLE)
@@ -186,7 +202,14 @@ class VersionConfig(private var versionPath: File) : Parcelable {
                         config?.let { return@getConfig it }
                     }
                 }
-                //读取此文件的内容，并解析为VersionConfig
+                //首次运行或更换品牌名称后，配置文件可能尚未存在。
+                if (configFile == null || !configFile.exists()) {
+                    val config = VersionConfig(versionPath)
+                    config.save()
+                    return@getConfig config
+                }
+
+                //读取此文件的内容，并解析为 VersionConfig
                 val configString = Tools.read(configFile)
                 val config = Tools.GLOBAL_GSON.fromJson(configString, VersionConfig::class.java)
                 runCatching {
@@ -200,6 +223,10 @@ class VersionConfig(private var versionPath: File) : Parcelable {
                     }
                 }.onFailure { Logging.e("Refresh Versions", "Failed to parse the version isolation field of the old version.", it) }
                 config.setVersionPath(versionPath)
+                // Migrate legacy branded folder to current folder.
+                if (configFile.parentFile?.absolutePath != currentConfigDir.absolutePath) {
+                    config.save()
+                }
                 config
             }.getOrElse { e ->
                 Logging.e("Refresh Versions", Tools.printToString(e))

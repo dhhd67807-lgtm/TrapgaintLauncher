@@ -25,4 +25,9 @@ class DownloadPageEvent {
      * 是否禁用RecyclerView
      */
     class RecyclerEnableEvent(val enable: Boolean)
+
+    /**
+     * 顶部栏搜索提交事件（用于资源下载页面）
+     */
+    class HeaderSearchEvent(val query: String)
 }

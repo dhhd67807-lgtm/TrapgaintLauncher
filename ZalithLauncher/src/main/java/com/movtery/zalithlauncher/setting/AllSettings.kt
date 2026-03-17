@@ -97,7 +97,7 @@ class AllSettings {
         val versionIsolation = BooleanSettingUnit("versionIsolation", true)
 
         @JvmStatic
-        val versionCustomInfo = StringSettingUnit("versionCustomInfo", "${InfoDistributor.LAUNCHER_NAME}[zl_version]")
+        val versionCustomInfo = StringSettingUnit("versionCustomInfo", "${InfoDistributor.LAUNCHER_NAME}[tg_version]")
 
         @JvmStatic
         val autoSetGameLanguage = BooleanSettingUnit("autoSetGameLanguage", true)

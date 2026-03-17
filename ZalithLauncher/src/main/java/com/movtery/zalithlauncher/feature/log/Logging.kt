@@ -12,6 +12,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import net.kdt.pojavlaunch.Tools
+import net.kdt.pojavlaunch.utils.BrandingSanitizer
 import java.io.BufferedWriter
 import java.io.File
 import java.io.FileWriter
@@ -64,7 +65,7 @@ object Logging {
         coroutineScope.launch {
             val date = Date(System.currentTimeMillis())
             val timeString = SimpleDateFormat("HH:mm:ss", Locale.getDefault()).format(date)
-            val logString = "[$timeString] (${tag.name}) <$mark> $log"
+            val logString = BrandingSanitizer.sanitize("[$timeString] (${tag.name}) <$mark> $log")
 
             appendToFile(logString)
         }

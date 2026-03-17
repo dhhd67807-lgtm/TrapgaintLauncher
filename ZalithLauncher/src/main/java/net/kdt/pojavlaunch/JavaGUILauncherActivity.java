@@ -36,6 +36,7 @@ import com.movtery.zalithlauncher.utils.path.PathManager;
 import net.kdt.pojavlaunch.customcontrols.keyboard.AwtCharSender;
 import net.kdt.pojavlaunch.multirt.MultiRTUtils;
 import net.kdt.pojavlaunch.multirt.Runtime;
+import net.kdt.pojavlaunch.utils.BrandingSanitizer;
 import net.kdt.pojavlaunch.utils.JREUtils;
 import net.kdt.pojavlaunch.utils.MathUtils;
 
@@ -63,6 +64,7 @@ public class JavaGUILauncherActivity extends BaseActivity implements View.OnTouc
     private GestureDetector mGestureDetector;
 
     private boolean mIsVirtualMouseEnabled;
+    private boolean mIsOverlayControlsVisible;
     private boolean mSubscribeJvmExitEvent;
 
     @SuppressLint("ClickableViewAccessibility")
@@ -90,6 +92,8 @@ public class JavaGUILauncherActivity extends BaseActivity implements View.OnTouc
         mGestureDetector = new GestureDetector(this, new SingleTapConfirm());
         binding.mainTouchpad.setFocusable(false);
         binding.mainTouchpad.setVisibility(View.GONE);
+        mIsOverlayControlsVisible = false;
+        binding.installmodOverlayControls.setVisibility(View.GONE);
 
         binding.installmodMousePri.setOnTouchListener(this);
         binding.installmodMouseSec.setOnTouchListener(this);
@@ -429,6 +433,11 @@ public class JavaGUILauncherActivity extends BaseActivity implements View.OnTouc
                 Toast.LENGTH_SHORT).show();
     }
 
+    public void toggleOverlayControls(View view) {
+        mIsOverlayControlsVisible = !mIsOverlayControlsVisible;
+        binding.installmodOverlayControls.setVisibility(mIsOverlayControlsVisible ? View.VISIBLE : View.GONE);
+    }
+
     public void launchJavaRuntime(Runtime runtime, File modFile, List<String> javaArgs) {
         JREUtils.redirectAndPrintJRELog();
         try {
@@ -450,7 +459,7 @@ public class JavaGUILauncherActivity extends BaseActivity implements View.OnTouc
                 Collections.reverse(javaArgList);
             }
 
-            Logger.appendToLog("Info: Java arguments: " + Arrays.toString(javaArgList.toArray(new String[0])));
+            Logger.appendToLog(BrandingSanitizer.sanitize("Info: Java arguments: " + Arrays.toString(javaArgList.toArray(new String[0]))));
 
             JREUtils.launchWithUtils(this, runtime, null, javaArgList, AllSettings.getJavaArgs().getValue());
         } catch (Throwable th) {

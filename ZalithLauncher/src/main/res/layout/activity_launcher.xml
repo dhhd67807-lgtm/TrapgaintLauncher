@@ -30,12 +30,12 @@
             app:layout_constraintBottom_toBottomOf="parent"
             android:contentDescription="Star" />
 
-        <!-- Dragon Launcher Text - Bebas Neue Font, Adaptive Color, No Animation -->
+        <!-- Trapgaint Text - Bebas Neue Font, Adaptive Color, No Animation -->
         <TextView
             android:id="@+id/app_title_text"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Dragon Launcher"
+            android:text="Trapgaint"
             android:textColor="@color/primary_text"
             android:textSize="@dimen/_32ssp"
             android:fontFamily="@font/bebas_neue_regular"
@@ -44,6 +44,23 @@
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintTop_toTopOf="parent"
             app:layout_constraintBottom_toBottomOf="parent" />
+
+        <com.movtery.zalithlauncher.ui.view.AnimEditText
+            android:id="@+id/header_search_input"
+            android:layout_width="@dimen/_180sdp"
+            android:layout_height="@dimen/_40sdp"
+            android:background="@drawable/background_edit_box"
+            android:hint="@string/download_ui_search"
+            android:imeOptions="actionSearch"
+            android:inputType="text"
+            android:paddingHorizontal="@dimen/padding_heavy"
+            android:singleLine="true"
+            android:textSize="@dimen/_13ssp"
+            android:visibility="gone"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent" />
 
         <!-- Profile Skin Face - Top Right Corner -->
         <ImageView

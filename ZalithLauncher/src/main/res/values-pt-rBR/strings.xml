@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- Zalith Launcher -->
+    <!-- Trapgaint -->
     <string name="generic_open">Abrir</string>
     <string name="generic_close">Fechar</string>
     <string name="generic_return">Voltar</string>
@@ -493,7 +493,7 @@
     <string name="setting_version_isolation_title">Isolamento de Versão</string>
     <string name="setting_version_isolation_desc">Ativar isolamento de versão para a versão do jogo\nQuando desativado, o caminho do jogo será .minecraft/\nQuando ativado, o caminho do jogo será alterado para .minecraft/versions/&lt;nome da versão&gt;/</string>
     <string name="setting_version_custom_info_title">Informações personalizadas</string>
-    <string name="setting_version_custom_info_desc">As informações personalizadas serão exibidas no canto inferior esquerdo do menu principal do jogo e no canto superior esquerdo da tela de depuração F3. Após adicionar o campo [zl_version], o lançador o substituirá pelo número da versão do lançador.</string>
+    <string name="setting_version_custom_info_desc">As informações personalizadas serão exibidas no canto inferior esquerdo do menu principal do jogo e no canto superior esquerdo da tela de depuração F3. Após adicionar o campo [tg_version], o lançador o substituirá pelo número da versão do lançador.</string>
     <string name="setting_set_game_language_title">Definir Idioma do Jogo Automaticamente</string>
     <string name="setting_set_game_language_desc">Ao iniciar o jogo, definir automaticamente o idioma do jogo para o idioma selecionado</string>
     <string name="setting_set_game_language_list">Definir Idioma do Jogo</string>
@@ -686,4 +686,6 @@
     <!-- Sponsorship Related -->
     <string name="request_sponsorship_title">Apoie o meu desenvolvimento</string>
     <string name="request_sponsorship_message">A maior parte deste software foi desenvolvida e mantida por mim sozinho. Se você acha que este software é útil para você e se suas condições permitirem, espero que considere me patrocinar para que eu possa ter mais motivação para continuar desenvolvendo e melhorando, obrigado pelo seu apoio!</string>
+    <string name="account_change_skin">Alterar skin</string>
+    <string name="game_launching">Iniciando Minecraft</string>
 </resources>

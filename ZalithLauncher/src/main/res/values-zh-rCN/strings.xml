@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- Zalith Launcher -->
+    <!-- Trapgaint -->
     <string name="generic_open">开启</string>
     <string name="generic_close">关闭</string>
     <string name="generic_return">返回</string>
@@ -521,7 +521,7 @@
     <string name="setting_version_isolation_title">版本隔离</string>
     <string name="setting_version_isolation_desc">是否为游戏版本开启版本隔离\n关闭时，版本的游戏路径为 .minecraft/\n开启后，版本的游戏路径将会变更为 .minecraft/versions/&lt;版本名称&gt;/</string>
     <string name="setting_version_custom_info_title">自定义信息</string>
-    <string name="setting_version_custom_info_desc">自定义信息将显示在游戏的主菜单左下角和 F3 调试屏幕的左上角。添加 [zl_version] 字段后，启动器会将其替换为启动器版本号</string>
+    <string name="setting_version_custom_info_desc">自定义信息将显示在游戏的主菜单左下角和 F3 调试屏幕的左上角。添加 [tg_version] 字段后，启动器会将其替换为启动器版本号</string>
     <string name="setting_set_game_language_title">自动设置游戏语言</string>
     <string name="setting_set_game_language_desc">在游戏启动时，自动设置游戏语言为选定的语言</string>
     <string name="setting_set_game_language_list">设置游戏语言</string>
@@ -726,4 +726,6 @@
     <!-- Sponsorship Related -->
     <string name="request_sponsorship_title">支持我的开发</string>
     <string name="request_sponsorship_message">这款软件的大部分内容都是我一个人开发和维护的。如果你觉得这款软件对你有帮助，并且条件允许的话，希望你能考虑赞助我，让我有更多动力继续开发和改进，谢谢你的支持！</string>
+    <string name="account_change_skin">更换皮肤</string>
+    <string name="game_launching">正在启动 Minecraft</string>
 </resources>

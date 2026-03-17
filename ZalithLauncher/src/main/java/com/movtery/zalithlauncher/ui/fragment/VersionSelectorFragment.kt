@@ -1,10 +1,12 @@
 package com.movtery.zalithlauncher.ui.fragment
 
 import android.annotation.SuppressLint
+import android.content.Intent
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.Toast
 import androidx.core.widget.doAfterTextChanged
 import com.google.android.material.tabs.TabLayout
 import com.google.android.material.tabs.TabLayout.OnTabSelectedListener
@@ -13,22 +15,49 @@ import com.movtery.anim.animations.Animations
 import com.movtery.zalithlauncher.R
 import com.movtery.zalithlauncher.databinding.FragmentVersionBinding
 import com.movtery.zalithlauncher.event.value.InstallGameEvent
+import com.movtery.zalithlauncher.feature.download.enums.Classify
+import com.movtery.zalithlauncher.feature.download.enums.Platform
+import com.movtery.zalithlauncher.feature.download.enums.VersionType as DownloadVersionType
+import com.movtery.zalithlauncher.feature.download.item.VersionItem
+import com.movtery.zalithlauncher.feature.download.platform.modrinth.ModrinthCommonUtils
+import com.movtery.zalithlauncher.feature.mod.modloader.DragonClientDownloadTask
+import com.movtery.zalithlauncher.feature.mod.modloader.DragonClientManifestResolver
+import com.movtery.zalithlauncher.feature.mod.modloader.FabricLikeApiModDownloadTask
+import com.movtery.zalithlauncher.feature.mod.modloader.FabricLikeDownloadTask
 import com.movtery.zalithlauncher.feature.mod.modloader.OptiFineDownloadTask
+import com.movtery.zalithlauncher.feature.customprofilepath.ProfilePathHome
+import com.movtery.zalithlauncher.setting.AllSettings
 import com.movtery.zalithlauncher.feature.version.install.Addon
+import com.movtery.zalithlauncher.feature.version.install.InstallArgsUtils
 import com.movtery.zalithlauncher.feature.version.install.InstallTaskItem
 import com.movtery.zalithlauncher.task.TaskExecutors
 import com.movtery.zalithlauncher.ui.subassembly.versionlist.VersionSelectedListener
 import com.movtery.zalithlauncher.ui.subassembly.versionlist.VersionType
+import com.movtery.zalithlauncher.utils.LauncherProfiles
 import com.movtery.zalithlauncher.utils.ZHTools
 import com.movtery.zalithlauncher.utils.setDebouncedClickListener
+import com.movtery.zalithlauncher.utils.runtime.SelectRuntimeUtils
+import net.kdt.pojavlaunch.JavaGUILauncherActivity
 import net.kdt.pojavlaunch.Tools
-import net.kdt.pojavlaunch.modloaders.OptiFineUtils
 import net.kdt.pojavlaunch.modloaders.ForgeUtils
+import net.kdt.pojavlaunch.modloaders.OptiFineUtils
+import org.apache.commons.io.FileUtils
 import org.greenrobot.eventbus.EventBus
+import java.io.File
 
 class VersionSelectorFragment : FragmentWithAnim(R.layout.fragment_version) {
     companion object {
         const val TAG: String = "FileSelectorFragment"
+        val DRAGON_SUPPORTED_VERSIONS = listOf(
+            "1.21.1",
+            "1.21.3",
+            "1.21.4",
+            "1.21.6",
+            "1.21.7",
+            "1.21.8",
+            "1.21.10",
+            "1.21.11"
+        )
     }
 
     private lateinit var binding: FragmentVersionBinding
@@ -62,17 +91,25 @@ class VersionSelectorFragment : FragmentWithAnim(R.layout.fragment_version) {
                 "VANILLA" -> R.drawable.ic_vanilla
                 "FABRIC" -> R.drawable.ic_fabric_loader
                 "FORGE" -> R.drawable.ic_forge
+                "CUSTOM" -> R.drawable.dragon_logo
                 else -> R.drawable.ic_vanilla
             }
             
             // Update version list to use the loader icon
             version.setLoaderIcon(loaderIcon)
+            version.setLoaderType(loaderType)
             
-            // Set version filter if a specific version was selected (e.g., "1.21")
-            if (selectedVersion != null) {
-                version.setVersionFilter(selectedVersion)
+            if (loaderType == "CUSTOM") {
+                version.setVersionFilter("1.21")
+                version.setAllowedVersionIds(DRAGON_SUPPORTED_VERSIONS)
+            } else {
+                version.setAllowedVersionIds(null)
+                // Set version filter if a specific version was selected (e.g., "1.21")
+                if (selectedVersion != null) {
+                    version.setVersionFilter(selectedVersion)
+                }
             }
-            
+
             refresh(versionTab.getTabAt(versionTab.selectedTabPosition))
 
             versionTab.addOnTabSelectedListener(object : OnTabSelectedListener {
@@ -104,6 +141,13 @@ class VersionSelectorFragment : FragmentWithAnim(R.layout.fragment_version) {
                             "VANILLA" -> startAutoInstallWithOptiFine(version)
                             "FABRIC" -> startAutoInstallWithFabric(version)
                             "FORGE" -> startAutoInstallWithForge(version)
+                            "CUSTOM" -> {
+                                if (!DRAGON_SUPPORTED_VERSIONS.contains(version)) {
+                                    Toast.makeText(requireActivity(), "Dragon supports only selected 1.21.x builds", Toast.LENGTH_LONG).show()
+                                    return
+                                }
+                                startAutoInstallWithCustom(version)
+                            }
                             else -> startAutoInstallWithOptiFine(version)
                         }
                     }
@@ -193,36 +237,121 @@ class VersionSelectorFragment : FragmentWithAnim(R.layout.fragment_version) {
         TaskExecutors.getDefault().submit {
             try {
                 val fabricUtils = com.movtery.zalithlauncher.feature.mod.modloader.FabricLikeUtils.FABRIC_UTILS
-                val gameVersions = fabricUtils.downloadGameVersions(false)
-                val loaderVersions = fabricUtils.downloadLoaderVersions(false)
-                
-                android.util.Log.d("VersionSelector", "Fabric loader versions count: ${loaderVersions?.size ?: 0}")
-                
-                if (loaderVersions.isNullOrEmpty()) {
-                    android.util.Log.w("VersionSelector", "No Fabric loader versions found, installing vanilla")
-                    // Install vanilla as fallback
-                    EventBus.getDefault().post(InstallGameEvent(mcVersion, mcVersion, emptyMap(), "FABRIC"))
-                } else {
-                    // Use the first (latest stable) Fabric loader version
-                    val latestFabric = loaderVersions.firstOrNull { it.stable } ?: loaderVersions[0]
-                    val customVersionName = "$mcVersion Fabric"
-                    
-                    android.util.Log.d("VersionSelector", "Installing Fabric version: ${latestFabric.version} for MC $mcVersion")
-                    
-                    val taskMap = mapOf(
-                        Addon.FABRIC to InstallTaskItem(
-                            latestFabric.version,
-                            false,
-                            fabricUtils.getDownloadTask(mcVersion, latestFabric.version),
-                            null
-                        )
-                    )
-                    
-                    EventBus.getDefault().post(InstallGameEvent(mcVersion, customVersionName, taskMap, "FABRIC"))
+                var gameVersions = fabricUtils.downloadGameVersions(false)
+                var loaderVersions = fabricUtils.downloadLoaderVersions(false)
+
+                if (gameVersions.isNullOrEmpty()) {
+                    gameVersions = fabricUtils.downloadGameVersions(true)
                 }
+                if (loaderVersions.isNullOrEmpty()) {
+                    loaderVersions = fabricUtils.downloadLoaderVersions(true)
+                }
+
+                android.util.Log.d("VersionSelector", "Fabric game versions count: ${gameVersions?.size ?: 0}")
+                android.util.Log.d("VersionSelector", "Fabric loader versions count: ${loaderVersions?.size ?: 0}")
+
+                val mcSupported = gameVersions?.any { it.version == mcVersion } == true
+                if (!mcSupported || loaderVersions.isNullOrEmpty()) {
+                    android.util.Log.w("VersionSelector", "Fabric metadata unavailable for MC $mcVersion (supported=$mcSupported, loaders=${loaderVersions?.size ?: 0})")
+                    TaskExecutors.runInUIThread {
+                        Toast.makeText(activity, "Fabric metadata unavailable for $mcVersion. Please try again.", Toast.LENGTH_LONG).show()
+                    }
+                    return@submit
+                }
+
+                // Use the first stable loader, fallback to the newest available loader.
+                val latestFabric = loaderVersions.firstOrNull { it.stable } ?: loaderVersions[0]
+                val customVersionName = "$mcVersion Fabric"
+
+                android.util.Log.d("VersionSelector", "Installing Fabric version: ${latestFabric.version} for MC $mcVersion")
+
+                val fabricTask = FabricLikeDownloadTask(fabricUtils, mcVersion, latestFabric.version)
+                val taskMap = mapOf(
+                    Addon.FABRIC to InstallTaskItem(
+                        latestFabric.version,
+                        false,
+                        fabricTask,
+                        null
+                    )
+                )
+
+                EventBus.getDefault().post(InstallGameEvent(mcVersion, customVersionName, taskMap, "FABRIC"))
             } catch (e: Exception) {
                 android.util.Log.e("VersionSelector", "Error installing Fabric", e)
-                EventBus.getDefault().post(InstallGameEvent(mcVersion, mcVersion, emptyMap(), "FABRIC"))
+                TaskExecutors.runInUIThread {
+                    Toast.makeText(activity, "Failed to install Fabric: ${e.message}", Toast.LENGTH_LONG).show()
+                }
+            }
+        }
+    }
+
+    private fun startAutoInstallWithCustom(mcVersion: String) {
+        val activity = requireActivity()
+        Tools.backToMainMenu(activity)
+
+        TaskExecutors.getDefault().submit {
+            try {
+                val fabricUtils = com.movtery.zalithlauncher.feature.mod.modloader.FabricLikeUtils.FABRIC_UTILS
+                var gameVersions = fabricUtils.downloadGameVersions(false)
+                var loaderVersions = fabricUtils.downloadLoaderVersions(false)
+
+                if (gameVersions.isNullOrEmpty()) gameVersions = fabricUtils.downloadGameVersions(true)
+                if (loaderVersions.isNullOrEmpty()) loaderVersions = fabricUtils.downloadLoaderVersions(true)
+
+                val mcSupported = gameVersions?.any { it.version == mcVersion } == true
+                if (!mcSupported || loaderVersions.isNullOrEmpty()) {
+                    TaskExecutors.runInUIThread {
+                        Toast.makeText(activity, "Fabric metadata unavailable for $mcVersion", Toast.LENGTH_LONG).show()
+                    }
+                    return@submit
+                }
+
+                val latestFabric = loaderVersions.firstOrNull { it.stable } ?: loaderVersions[0]
+                val fabricApiVersion = findLatestFabricApiForVersion(mcVersion)
+                if (fabricApiVersion == null) {
+                    TaskExecutors.runInUIThread {
+                        Toast.makeText(activity, "Fabric API not found for $mcVersion on Modrinth", Toast.LENGTH_LONG).show()
+                    }
+                    return@submit
+                }
+
+                val dragonAsset = DragonClientManifestResolver.resolveLatestAsset(mcVersion)
+                if (dragonAsset == null) {
+                    TaskExecutors.runInUIThread {
+                        Toast.makeText(activity, "Dragon Client not available for $mcVersion", Toast.LENGTH_LONG).show()
+                    }
+                    return@submit
+                }
+
+                val customVersionName = "$mcVersion Dragon Client"
+                val fabricTask = FabricLikeDownloadTask(fabricUtils, mcVersion, latestFabric.version)
+                val taskMap = linkedMapOf(
+                    Addon.FABRIC to InstallTaskItem(
+                        latestFabric.version,
+                        false,
+                        fabricTask,
+                        null
+                    ),
+                    Addon.FABRIC_API to InstallTaskItem(
+                        fabricApiVersion.title,
+                        true,
+                        FabricLikeApiModDownloadTask("fabric-api", fabricApiVersion),
+                        createMoveToModsEndTask(customVersionName, "fabric-api-${mcVersion}.jar")
+                    ),
+                    Addon.DRAGON_CLIENT to InstallTaskItem(
+                        "Dragon Client ${dragonAsset.clientVersion}",
+                        true,
+                        DragonClientDownloadTask(dragonAsset),
+                        createMoveToModsEndTask(customVersionName, dragonAsset.fileName)
+                    )
+                )
+
+                EventBus.getDefault().post(InstallGameEvent(mcVersion, customVersionName, taskMap, "CUSTOM"))
+            } catch (e: Exception) {
+                android.util.Log.e("VersionSelector", "Error installing custom loader", e)
+                TaskExecutors.runInUIThread {
+                    Toast.makeText(activity, "Custom install failed: ${e.message}", Toast.LENGTH_LONG).show()
+                }
             }
         }
     }
@@ -236,17 +365,25 @@ class VersionSelectorFragment : FragmentWithAnim(R.layout.fragment_version) {
         TaskExecutors.getDefault().submit {
             try {
                 // For Forge, we need to download the version list and find a compatible version
-                val forgeVersions: List<String>? = ForgeUtils.downloadForgeVersions(false)
+                var forgeVersions: List<String>? = ForgeUtils.downloadForgeVersions(false)
                 
                 android.util.Log.d("VersionSelector", "Forge versions count: ${forgeVersions?.size ?: 0}")
+
+                // Refresh metadata once when cache is stale or empty.
+                if (forgeVersions.isNullOrEmpty()) {
+                    forgeVersions = ForgeUtils.downloadForgeVersions(true)
+                    android.util.Log.d("VersionSelector", "Forge versions after force refresh: ${forgeVersions?.size ?: 0}")
+                }
                 
                 if (forgeVersions.isNullOrEmpty()) {
-                    android.util.Log.w("VersionSelector", "No Forge versions found, installing vanilla")
-                    // No Forge available, install vanilla
-                    EventBus.getDefault().post(InstallGameEvent(mcVersion, mcVersion, emptyMap(), "FORGE"))
+                    android.util.Log.w("VersionSelector", "No Forge versions found for MC $mcVersion")
+                    TaskExecutors.runInUIThread {
+                        Toast.makeText(activity, "No Forge version found for $mcVersion", Toast.LENGTH_LONG).show()
+                    }
                 } else {
                     // Find the first Forge version that matches this MC version
-                    val compatibleForge: String? = forgeVersions.firstOrNull { version: String -> 
+                    // Prefer the newest compatible version instead of the oldest one.
+                    val compatibleForge: String? = forgeVersions.lastOrNull { version: String ->
                         version.startsWith("$mcVersion-")
                     }
                     
@@ -254,32 +391,93 @@ class VersionSelectorFragment : FragmentWithAnim(R.layout.fragment_version) {
                     
                     if (compatibleForge != null) {
                         val customVersionName = "$mcVersion Forge"
-                        // Extract loader version from full version (e.g., "1.21.8-58.0.3" -> "58.0.3")
-                        val loaderVersion = compatibleForge.substringAfter("-")
-                        android.util.Log.d("VersionSelector", "Extracted loader version: $loaderVersion")
-                        
-                        val forgeTask = com.movtery.zalithlauncher.feature.mod.modloader.ForgeDownloadTask(mcVersion, loaderVersion)
+                        val forgeTask = com.movtery.zalithlauncher.feature.mod.modloader.ForgeDownloadTask(compatibleForge)
                         
                         val taskMap = mapOf(
                             Addon.FORGE to InstallTaskItem(
                                 compatibleForge,
                                 false,
                                 forgeTask,
-                                null
+                                createGuiInstallerEndTask(Addon.FORGE.addonName, mcVersion, compatibleForge) { intent, argUtils, installerFile ->
+                                    argUtils.setForge(intent, installerFile, customVersionName)
+                                }
                             )
                         )
                         
                         EventBus.getDefault().post(InstallGameEvent(mcVersion, customVersionName, taskMap, "FORGE"))
                     } else {
                         android.util.Log.w("VersionSelector", "No compatible Forge version found for MC $mcVersion")
-                        // No compatible Forge version found, install vanilla
-                        EventBus.getDefault().post(InstallGameEvent(mcVersion, mcVersion, emptyMap(), "FORGE"))
+                        TaskExecutors.runInUIThread {
+                            Toast.makeText(activity, "No compatible Forge build for $mcVersion", Toast.LENGTH_LONG).show()
+                        }
                     }
                 }
             } catch (e: Exception) {
                 android.util.Log.e("VersionSelector", "Error installing Forge", e)
-                EventBus.getDefault().post(InstallGameEvent(mcVersion, mcVersion, emptyMap(), "FORGE"))
+                TaskExecutors.runInUIThread {
+                    Toast.makeText(activity, "Failed to install Forge: ${e.message}", Toast.LENGTH_LONG).show()
+                }
             }
+        }
+    }
+
+    private fun createGuiInstallerEndTask(
+        addonName: String,
+        mcVersion: String,
+        loaderVersion: String,
+        setArgs: (Intent, InstallArgsUtils, java.io.File) -> Unit
+    ): InstallTaskItem.EndTask {
+        return InstallTaskItem.EndTask { taskActivity, installerFile ->
+            val intent = Intent(taskActivity, JavaGUILauncherActivity::class.java)
+            val argUtils = InstallArgsUtils(mcVersion, loaderVersion)
+            setArgs(intent, argUtils, installerFile)
+
+            SelectRuntimeUtils.selectRuntime(
+                taskActivity,
+                taskActivity.getString(R.string.version_install_new_modloader, addonName)
+            ) { jreName ->
+                LauncherProfiles.generateLauncherProfiles()
+                intent.putExtra(JavaGUILauncherActivity.EXTRAS_JRE_NAME, jreName)
+                taskActivity.startActivity(intent)
+            }
+        }
+    }
+
+    private fun findLatestFabricApiForVersion(mcVersion: String): VersionItem? {
+        val helper = Platform.MODRINTH.helper
+        val infoItem = ModrinthCommonUtils.getInfo(helper.api, Classify.MOD, "P7dR8mSH") ?: return null
+
+        var versions = helper.getVersions(infoItem, false)
+        if (versions.isNullOrEmpty()) {
+            versions = helper.getVersions(infoItem, true)
+        }
+        if (versions.isNullOrEmpty()) return null
+
+        return versions
+            .asSequence()
+            .filter { it.mcVersions.contains(mcVersion) && it.fileName.endsWith(".jar", true) }
+            .sortedWith(
+                compareBy<VersionItem> { it.versionType != DownloadVersionType.RELEASE }
+                    .thenByDescending { it.uploadDate.time }
+            )
+            .firstOrNull()
+    }
+
+    private fun createMoveToModsEndTask(customVersionName: String, targetFileName: String): InstallTaskItem.EndTask {
+        return InstallTaskItem.EndTask { _, downloadedFile ->
+            val modsDir = if (AllSettings.versionIsolation.getValue()) {
+                File(
+                    ProfilePathHome.getGameHome(),
+                    "versions${File.separator}$customVersionName${File.separator}mods"
+                )
+            } else {
+                File(ProfilePathHome.getGameHome(), "mods")
+            }
+
+            if (!modsDir.exists()) modsDir.mkdirs()
+            val destinationFile = File(modsDir, targetFileName)
+            if (destinationFile.exists()) destinationFile.delete()
+            FileUtils.copyFile(downloadedFile, destinationFile)
         }
     }
 
