@@ -28,11 +28,13 @@ val getBuildType = {
 }
 
 val nameId = "com.movtery.zalithlauncher"
+val appId = "com.trapgaint.launcher"
 val generatedZalithDir = file("$buildDir/generated/source/zalith/java")
 val launcherAPPName = project.findProperty("launcher_app_name") as? String ?: error("The \"launcher_app_name\" property is not set in gradle.properties.")
 val launcherName = project.findProperty("launcher_name") as? String ?: error("The \"launcher_name\" property is not set in gradle.properties.")
 val launcherVersionCode = (project.findProperty("launcher_version_code") as? String)?.toIntOrNull() ?: error("The \"launcher_version_code\" property is not set as an integer in gradle.properties.")
 val launcherVersionName = project.findProperty("launcher_version_name") as? String ?: error("The \"launcher_version_name\" property is not set in gradle.properties.")
+val releaseSigningMode = (System.getenv("RELEASE_SIGNING_MODE") ?: "").lowercase()
 
 configurations {
     create("instrumentedClasspath") {
@@ -54,11 +56,19 @@ android {
 
     signingConfigs {
         create("releaseBuild") {
-            val pwd = System.getenv("MOVTERY_KEYSTORE_PASSWORD")
-            storeFile = file("movtery-key.jks")
-            storePassword = pwd
-            keyAlias = "mtp"
-            keyPassword = pwd
+            if (releaseSigningMode == "debug") {
+                logger.warn("BUILD: RELEASE_SIGNING_MODE=debug, using debug keystore for release build")
+                storeFile = file("debug.keystore")
+                storePassword = "android"
+                keyAlias = "androiddebugkey"
+                keyPassword = "android"
+            } else {
+                val pwd = System.getenv("MOVTERY_KEYSTORE_PASSWORD")
+                storeFile = file("movtery-key.jks")
+                storePassword = pwd
+                keyAlias = "mtp"
+                keyPassword = pwd
+            }
         }
         create("customDebug") {
             storeFile = file("debug.keystore")
@@ -69,7 +79,7 @@ android {
     }
 
     defaultConfig {
-        applicationId = nameId
+        applicationId = appId
         minSdk = 26
         targetSdk = 34
         versionCode = launcherVersionCode
@@ -79,7 +89,7 @@ android {
     }
 
     buildTypes {
-        val storageProviderId = "$nameId.storage_provider"
+        val storageProviderId = "$appId.storage_provider"
 
         getByName("debug") {
             applicationIdSuffix = ".debug"

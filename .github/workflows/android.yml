@@ -53,6 +53,7 @@ jobs:
       - name: Build Release ${{ matrix.arch }}
         env:
           MOVTERY_KEYSTORE_PASSWORD: ${{ secrets.MOVTERY_KEYSTORE_PASSWORD }}
+          RELEASE_SIGNING_MODE: debug
         run: |
           chmod +x gradlew
           ./gradlew ZalithLauncher:assemblerelease -Darch=${{ matrix.arch }} -Dorg.gradle.java.home="$JAVA_HOME" -x lintVitalRelease -x generateReleaseLintVitalReportModel
