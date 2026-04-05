@@ -47,9 +47,8 @@ abstract class LifecycleAwareTipDialog: LifecycleEventObserver {
     protected abstract fun dialogHidden(lifecycleEnded: Boolean)
 
     private fun dispatchDialogHidden() {
-        Exception().printStackTrace()
         dialogHidden(mLifecycleEnded)
-        mLifecycle!!.removeObserver(this)
+        mLifecycle?.removeObserver(this)
     }
 
     override fun onStateChanged(source: LifecycleOwner, event: Lifecycle.Event) {

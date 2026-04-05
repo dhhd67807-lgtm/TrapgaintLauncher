@@ -41,7 +41,11 @@ class UrlManager {
         @JvmStatic
         @Throws(IOException::class)
         fun createHttpConnection(url: URL): HttpURLConnection {
-            return createConnection(url) as HttpURLConnection
+            val connection = createConnection(url)
+            if (connection !is HttpURLConnection) {
+                throw IOException("Expected HTTP connection for URL: $url")
+            }
+            return connection
         }
 
         @JvmStatic

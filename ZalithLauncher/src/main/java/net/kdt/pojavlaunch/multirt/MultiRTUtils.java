@@ -126,9 +126,9 @@ public class MultiRTUtils {
         unpack200(PathManager.DIR_NATIVE_LIB,RUNTIME_FOLDER + "/" + name);
 
         File binpack_verfile = new File(RUNTIME_FOLDER,"/"+name+"/pojav_version");
-        FileOutputStream fos = new FileOutputStream(binpack_verfile);
-        fos.write(binpackVersion.getBytes());
-        fos.close();
+        try (FileOutputStream fos = new FileOutputStream(binpack_verfile)) {
+            fos.write(binpackVersion.getBytes());
+        }
 
         ProgressLayout.clearProgress(ProgressLayout.UNPACK_RUNTIME);
 
@@ -226,11 +226,10 @@ public class MultiRTUtils {
     @SuppressWarnings("SameParameterValue")
     private static void copyDummyNativeLib(String name, File dest, String libFolder) throws IOException {
         File fileLib = new File(dest, "/"+libFolder + "/" + name);
-        FileInputStream is = new FileInputStream(new File(PathManager.DIR_NATIVE_LIB, name));
-        FileOutputStream os = new FileOutputStream(fileLib);
-        IOUtils.copy(is, os);
-        is.close();
-        os.close();
+        try (FileInputStream is = new FileInputStream(new File(PathManager.DIR_NATIVE_LIB, name));
+             FileOutputStream os = new FileOutputStream(fileLib)) {
+            IOUtils.copy(is, os);
+        }
     }
 
     private static void installRuntimeNamedNoRemove(InputStream runtimeInputStream, File dest) throws IOException {
@@ -242,37 +241,37 @@ public class MultiRTUtils {
         net.kdt.pojavlaunch.utils.FileUtils.ensureDirectory(dest);
 
         byte[] buffer = new byte[8192];
-        TarArchiveInputStream tarIn = new TarArchiveInputStream(
+        try (TarArchiveInputStream tarIn = new TarArchiveInputStream(
                 new XZCompressorInputStream(tarFileInputStream)
-        );
-        TarArchiveEntry tarEntry = tarIn.getNextTarEntry();
-        // tarIn is a TarArchiveInputStream
-        while (tarEntry != null) {
+        )) {
+            TarArchiveEntry tarEntry = tarIn.getNextTarEntry();
+            // tarIn is a TarArchiveInputStream
+            while (tarEntry != null) {
 
-            final String tarEntryName = tarEntry.getName();
-            // publishProgress(null, "Unpacking " + tarEntry.getName());
-            ProgressLayout.setProgress(ProgressLayout.UNPACK_RUNTIME, 100, R.string.generic_unpacking, tarEntryName);
+                final String tarEntryName = tarEntry.getName();
+                // publishProgress(null, "Unpacking " + tarEntry.getName());
+                ProgressLayout.setProgress(ProgressLayout.UNPACK_RUNTIME, 100, R.string.generic_unpacking, tarEntryName);
 
-            File destPath = new File(dest, tarEntry.getName());
-            net.kdt.pojavlaunch.utils.FileUtils.ensureParentDirectory(destPath);
-            if (tarEntry.isSymbolicLink()) {
-                try {
-                    // android.system.Os
-                    // Libcore one support all Android versions
-                    Os.symlink(tarEntry.getName(), tarEntry.getLinkName());
-                } catch (Throwable e) {
-                    Logging.e("MultiRT", Tools.printToString(e));
+                File destPath = new File(dest, tarEntry.getName());
+                net.kdt.pojavlaunch.utils.FileUtils.ensureParentDirectory(destPath);
+                if (tarEntry.isSymbolicLink()) {
+                    try {
+                        // android.system.Os
+                        // Libcore one support all Android versions
+                        Os.symlink(tarEntry.getName(), tarEntry.getLinkName());
+                    } catch (Throwable e) {
+                        Logging.e("MultiRT", Tools.printToString(e));
+                    }
+
+                } else if (tarEntry.isDirectory()) {
+                    net.kdt.pojavlaunch.utils.FileUtils.ensureDirectory(destPath);
+                } else if (!destPath.exists() || destPath.length() != tarEntry.getSize()) {
+                    try (FileOutputStream os = new FileOutputStream(destPath)) {
+                        IOUtils.copyLarge(tarIn, os, buffer);
+                    }
                 }
-
-            } else if (tarEntry.isDirectory()) {
-                net.kdt.pojavlaunch.utils.FileUtils.ensureDirectory(destPath);
-            } else if (!destPath.exists() || destPath.length() != tarEntry.getSize()) {
-                FileOutputStream os = new FileOutputStream(destPath);
-                IOUtils.copyLarge(tarIn, os, buffer);
-                os.close();
+                tarEntry = tarIn.getNextTarEntry();
             }
-            tarEntry = tarIn.getNextTarEntry();
         }
-        tarIn.close();
     }
 }

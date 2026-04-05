@@ -385,7 +385,7 @@ public final class Tools {
                         if(exitIfOk) {
                             if (ctx instanceof MainActivity) {
                                 ZHTools.killProcess();
-                            } else {
+                            } else if (ctx instanceof Activity) {
                                 ((Activity) ctx).finish();
                             }
                         }

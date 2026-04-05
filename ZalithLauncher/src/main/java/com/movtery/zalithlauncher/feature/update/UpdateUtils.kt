@@ -139,13 +139,11 @@ class UpdateUtils {
                             } else if (!ignore) {
                                 runInUIThread {
                                     val nowVersionName = ZHTools.getVersionName()
-                                    runInUIThread {
-                                        Toast.makeText(
-                                            context,
-                                            StringUtils.insertSpace(context.getString(R.string.update_without), nowVersionName),
-                                            Toast.LENGTH_SHORT
-                                        ).show()
-                                    }
+                                    Toast.makeText(
+                                        context,
+                                        StringUtils.insertSpace(context.getString(R.string.update_without), nowVersionName),
+                                        Toast.LENGTH_SHORT
+                                    ).show()
                                 }
                             }
                         } catch (e: Exception) {

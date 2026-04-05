@@ -32,6 +32,7 @@ class ProfilePathAdapter(
     private val radioButtonList: MutableList<RadioButton> = mutableListOf()
     //如果没有存储权限，那么旧设置为默认路径
     private var currentId: String? = if (StoragePermissionsUtils.checkPermissions()) launcherProfile.getValue() else "default"
+    private var lastClickTime: Long = 0
     private val managerPopupWindow: PopupWindow = PopupWindow().apply {
         isFocusable = true
         isOutsideTouchable = true
@@ -104,6 +105,10 @@ class ProfilePathAdapter(
                 path.isSelected = true
 
                 val onClickListener = View.OnClickListener {
+                    val now = System.currentTimeMillis()
+                    if (now - lastClickTime < 500) return@OnClickListener
+                    lastClickTime = now
+
                     if (VersionsManager.canRefresh() && currentId != profileItem.id) {
                         StoragePermissionsUtils.checkPermissions(
                             activity = fragment.requireActivity(),

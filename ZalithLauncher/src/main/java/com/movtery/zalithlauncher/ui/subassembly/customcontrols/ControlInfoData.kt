@@ -23,9 +23,9 @@ class ControlInfoData : Comparable<ControlInfoData?> {
         return compareChar(thisName, otherName)
     }
 
-    private fun compareChar(first: String?, second: String?): Int {
-        val firstLength = first!!.length
-        val secondLength = second!!.length
+    private fun compareChar(first: String, second: String): Int {
+        val firstLength = first.length
+        val secondLength = second.length
 
         //遍历两个字符串的字符
         for (i in 0 until min(firstLength.toDouble(), secondLength.toDouble()).toInt()) {

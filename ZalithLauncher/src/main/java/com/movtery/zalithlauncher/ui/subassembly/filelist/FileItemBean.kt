@@ -40,12 +40,12 @@ class FileItemBean(
         val otherName = other.file?.name ?: other.name
 
         //首先检查文件是否为目录
-        if (this.file != null && file!!.isDirectory) {
-            if (other.file != null && !other.file!!.isDirectory) {
+        if (this.file?.isDirectory == true) {
+            if (other.file?.isDirectory != true) {
                 //目录排在文件前面
                 return -1
             }
-        } else if (other.file != null && other.file!!.isDirectory) {
+        } else if (other.file?.isDirectory == true) {
             //文件排在目录后面
             return 1
         }

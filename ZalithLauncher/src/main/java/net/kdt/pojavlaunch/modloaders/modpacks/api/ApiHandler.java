@@ -61,13 +61,13 @@ public class ApiHandler {
     public static String getRaw(Map<String, String> headers, String url) {
         Logging.d("ApiHandler", url);
         HttpURLConnection conn = null;
+        InputStream inputStream = null;
         try {
             conn = UrlManager.createHttpConnection(new URL(url));
             addHeaders(conn, headers);
-            InputStream inputStream = new BufferedInputStream(conn.getInputStream());
+            inputStream = new BufferedInputStream(conn.getInputStream());
             String data = Tools.read(inputStream);
 
-            inputStream.close();
             conn.disconnect();
             return data;
         } catch (FileNotFoundException e) {
@@ -78,10 +78,14 @@ public class ApiHandler {
             return null;
         } catch (Exception e) {
             Logging.e("ApiHandler", Tools.printToString(e));
+            throw new RuntimeException(e);
+        } finally {
+            if (inputStream != null) {
+                try { inputStream.close(); } catch (IOException ignored) {}
+            }
             if (conn != null) {
                 conn.disconnect();
             }
-            throw new RuntimeException(e);
         }
     }
 

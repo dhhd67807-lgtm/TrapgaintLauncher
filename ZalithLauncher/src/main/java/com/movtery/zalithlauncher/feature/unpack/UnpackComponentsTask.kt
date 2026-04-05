@@ -38,15 +38,16 @@ class UnpackComponentsTask(val context: Context, val component: Components) : Ab
             i("Unpack Components", "${component.component}: Pack was installed manually, or does not exist...")
             return true
         } else {
-            val fis = FileInputStream(versionFile)
-            val release1 = Tools.read(input)
-            val release2 = Tools.read(fis)
-            if (release1 != release2) {
-                requestEmptyParentDir(versionFile)
-                return true
-            } else {
-                i("UnpackPrep", "${component.component}: Pack is up-to-date with the launcher, continuing...")
-                return false
+            FileInputStream(versionFile).use { fis ->
+                val release1 = Tools.read(input)
+                val release2 = Tools.read(fis)
+                if (release1 != release2) {
+                    requestEmptyParentDir(versionFile)
+                    return true
+                } else {
+                    i("UnpackPrep", "${component.component}: Pack is up-to-date with the launcher, continuing...")
+                    return false
+                }
             }
         }
     }

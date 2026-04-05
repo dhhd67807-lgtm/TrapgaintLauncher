@@ -101,8 +101,11 @@ class CurseForgeModPackInstallHelper {
                     break
                 }
             }
-            if (primaryModLoader == null) primaryModLoader = minecraft.modLoaders[0]
-            val modLoaderId = primaryModLoader!!.id
+            if (primaryModLoader == null) {
+                if (minecraft.modLoaders.isEmpty()) return null
+                primaryModLoader = minecraft.modLoaders[0]
+            }
+            val modLoaderId = primaryModLoader.id
             val dashIndex = modLoaderId.indexOf('-')
             val modLoaderName = modLoaderId.substring(0, dashIndex)
             val modLoaderVersion = modLoaderId.substring(dashIndex + 1)

@@ -76,23 +76,26 @@ public class DownloadUtils {
         FileUtils.ensureParentDirectory(outputFile);
 
         HttpURLConnection conn = (HttpURLConnection) new URL(urlInput).openConnection();
-        conn.setReadTimeout(UrlManager.TIME_OUT.getFirst());
-        InputStream readStr = conn.getInputStream();
-        try (FileOutputStream fos = new FileOutputStream(outputFile)) {
-            int current;
-            int overall = 0;
-            int length = conn.getContentLength();
+        try {
+            conn.setReadTimeout(UrlManager.TIME_OUT.getFirst());
+            InputStream readStr = conn.getInputStream();
+            try (FileOutputStream fos = new FileOutputStream(outputFile)) {
+                int current;
+                int overall = 0;
+                int length = conn.getContentLength();
 
-            if (buffer == null) buffer = new byte[65535];
+                if (buffer == null) buffer = new byte[65535];
 
-            while ((current = readStr.read(buffer)) != -1) {
-                overall += current;
-                fos.write(buffer, 0, current);
-                monitor.updateProgress(overall, length);
+                while ((current = readStr.read(buffer)) != -1) {
+                    overall += current;
+                    fos.write(buffer, 0, current);
+                    monitor.updateProgress(overall, length);
+                }
             }
-            conn.disconnect();
         } catch (SocketTimeoutException e) {
             throw new IOException("Download timed out: " + urlInput, e);
+        } finally {
+            conn.disconnect();
         }
     }
 

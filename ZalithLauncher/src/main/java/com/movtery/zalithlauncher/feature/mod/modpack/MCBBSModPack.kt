@@ -118,16 +118,15 @@ class MCBBSModPack(private val context: Context, private val zipFile: File?) {
         var version = ""
         var modLoader = ""
         var modLoaderVersion = ""
-        for (i in 0..addons.size) {
-            if (addons[i]!!.id == "game") {
-                version = addons[i]!!.version
+        for (i in 0 until addons.size) {
+            val addon = addons[i] ?: continue
+            if (addon.id == "game") {
+                version = addon.version
                 continue
             }
-            if (addons[i] != null) {
-                modLoader = addons[i]!!.id
-                modLoaderVersion = addons[i]!!.version
-                break
-            }
+            modLoader = addon.id
+            modLoaderVersion = addon.version
+            break
         }
         val modloader = when (modLoader) {
             "forge" -> ModLoader.FORGE

@@ -88,8 +88,9 @@ class AccountUtils {
             }
 
             var url = addHttpsIfMissing(baseUrl)
-            runCatching {
-                var conn = URL(url).openConnection() as HttpURLConnection
+            var conn: HttpURLConnection? = null
+            try {
+                conn = URL(url).openConnection() as HttpURLConnection
                 conn.getHeaderField("x-authlib-injector-api-location")?.let { ali ->
                     val absoluteAli = URL(conn.url, ali)
                     url = url.addSlashIfMissing()
@@ -102,8 +103,10 @@ class AccountUtils {
                 }
 
                 return url.addSlashIfMissing()
-            }.getOrElse { e ->
+            } catch (e: Exception) {
                 Logging.e("getFullServerUrl", Tools.printToString(e))
+            } finally {
+                conn?.disconnect()
             }
             return baseUrl
         }
